@@ -38,9 +38,8 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       exportRoot.style.alignItems = 'center';
       exportRoot.style.justifyContent = 'center';
       exportRoot.style.pointerEvents = 'none';
-      exportRoot.style.opacity = '0';
-      exportRoot.style.zIndex = '-1';
       exportRoot.style.boxSizing = 'border-box';
+      exportRoot.style.transform = 'translateX(-200vw)';
 
       const cardClone = cardRef.current.cloneNode(true) as HTMLDivElement;
       cardClone.style.width = `${Math.ceil(rect.width)}px`;
