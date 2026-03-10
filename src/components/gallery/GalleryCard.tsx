@@ -30,7 +30,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       const rect = cardRef.current.getBoundingClientRect();
       const exportRoot = document.createElement('div');
       exportRoot.style.position = 'fixed';
-      exportRoot.style.left = '-10000px';
+      exportRoot.style.left = '0';
       exportRoot.style.top = '0';
       exportRoot.style.padding = '40px';
       exportRoot.style.background = '#FBF9F6';
@@ -38,6 +38,9 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       exportRoot.style.alignItems = 'center';
       exportRoot.style.justifyContent = 'center';
       exportRoot.style.pointerEvents = 'none';
+      exportRoot.style.opacity = '0';
+      exportRoot.style.zIndex = '-1';
+      exportRoot.style.boxSizing = 'border-box';
 
       const cardClone = cardRef.current.cloneNode(true) as HTMLDivElement;
       cardClone.style.width = `${Math.ceil(rect.width)}px`;
@@ -61,6 +64,9 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
             });
           })
         );
+
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
         const dataUrl = await (toPng as unknown as (node: HTMLElement, options: unknown) => Promise<string>)(exportRoot, {
           cacheBust: true,
