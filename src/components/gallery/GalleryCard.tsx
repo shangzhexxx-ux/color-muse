@@ -35,17 +35,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
 
   const openWeChatSaveSheet = async (dataUrl: string) => {
-    if (wechatPreviewUrl) {
-      URL.revokeObjectURL(wechatPreviewUrl);
-      setWechatPreviewUrl(null);
-    }
-    try {
-      const blob = await (await fetch(dataUrl)).blob();
-      const blobUrl = URL.createObjectURL(blob);
-      setWechatPreviewUrl(blobUrl);
-    } catch {
-      setWechatPreviewUrl(dataUrl);
-    }
+    setWechatPreviewUrl(dataUrl);
   };
 
   const openImageOnlyPreview = async (dataUrl: string) => {
@@ -301,30 +291,31 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       </div>
 
       {wechatPreviewUrl ? (
-        <div
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-6"
-          onClick={() => {
-            if (wechatPreviewUrl.startsWith('blob:')) URL.revokeObjectURL(wechatPreviewUrl);
-            setWechatPreviewUrl(null);
-          }}
-        >
+        <div className="fixed inset-0 bg-[#FBF9F6]/95 backdrop-blur-sm flex items-center justify-center z-50 p-6">
+          <button
+            type="button"
+            className="absolute inset-0 w-full h-full"
+            onClick={() => setWechatPreviewUrl(null)}
+            aria-label="关闭"
+          />
           <div
-            className="max-w-[92vw] w-full"
+            className="max-w-sm w-full"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="text-white text-sm font-sans text-center mb-4">
-              长按图片保存到相册
+            <div className="bg-white rounded-2xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] p-5">
+              <div className="text-gray-400 text-[12px] font-sans tracking-[0.25em] text-center mb-4">
+                长按图片保存到相册
+              </div>
+              <img
+                src={wechatPreviewUrl}
+                alt="Color Muse Export"
+                className="w-full h-auto rounded-2xl"
+              />
             </div>
-            <img
-              src={wechatPreviewUrl}
-              alt="Color Muse Export"
-              className="w-full h-auto rounded-lg"
-            />
             <button
               type="button"
-              className="mt-4 w-full bg-white/10 text-white text-sm font-sans py-3 rounded-lg"
+              className="mt-4 w-full text-gray-400 hover:text-gray-600 transition-colors text-sm font-sans py-3 rounded-2xl border border-gray-200 bg-white"
               onClick={() => {
-                if (wechatPreviewUrl.startsWith('blob:')) URL.revokeObjectURL(wechatPreviewUrl);
                 setWechatPreviewUrl(null);
               }}
             >
