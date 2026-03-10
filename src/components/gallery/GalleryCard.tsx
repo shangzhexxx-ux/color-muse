@@ -15,6 +15,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   const generateRef = useRef<() => Promise<string | null>>(async () => null);
   const isGeneratingRef = useRef(false);
   const generatedImageRef = useRef<string | null>(null);
+  const [weChatPreviewUrl, setWeChatPreviewUrl] = useState<string | null>(null);
 
   const downloadDataUrl = async (dataUrl: string, filename: string) => {
     const blob = await (await fetch(dataUrl)).blob();
@@ -37,57 +38,6 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
   const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
 
-  const openBlankWindow = () => {
-    const newWindow = window.open('about:blank');
-    if (!newWindow) return null;
-    try {
-      newWindow.document.open();
-      newWindow.document.write('<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#e9e9e9;color:#9CA3AF">生成中...</body></html>');
-      newWindow.document.close();
-    } catch {
-      // ignore
-    }
-    return newWindow;
-  };
-
-  const renderImageInWindow = async (newWindow: Window | null, dataUrl: string) => {
-    if (!newWindow) {
-      window.location.href = dataUrl;
-      return;
-    }
-
-    try {
-      newWindow.document.open();
-      newWindow.document.write(`<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Color Muse</title>
-    <style>
-      html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #e9e9e9; }
-      .wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #e9e9e9; }
-      img { width: 100vw; height: 100vh; object-fit: contain; display: block; -webkit-user-select: none; user-select: none; }
-      .tip { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.06); color: rgba(0,0,0,0.55); padding: 10px 14px; border-radius: 999px; font: 13px system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; letter-spacing: 0.08em; white-space: nowrap; }
-    </style>
-  </head>
-  <body>
-    <div class="wrap">
-      <img src="${dataUrl}" alt="Color Muse Export" />
-    </div>
-    <div class="tip">点击右上角 “···” 保存图片到相册</div>
-  </body>
-</html>`);
-      newWindow.document.close();
-    } catch {
-      try {
-        newWindow.location.replace(dataUrl);
-      } catch {
-        window.location.href = dataUrl;
-      }
-    }
-  };
-
   const openImageOnlyPreview = async (dataUrl: string) => {
     const newWindow = window.open('about:blank');
     if (!newWindow) {
@@ -104,6 +54,14 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       newWindow.location.replace(dataUrl);
     }
   };
+
+  useEffect(() => {
+    const onPopState = () => {
+      if (weChatPreviewUrl) setWeChatPreviewUrl(null);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [weChatPreviewUrl]);
 
   useEffect(() => {
     const drawRoundedRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => {
@@ -316,8 +274,8 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       if (!url) return;
 
       if (isWeChat) {
-        const newWindow = openBlankWindow();
-        await renderImageInWindow(newWindow, url);
+        setWeChatPreviewUrl(url);
+        window.history.pushState({ cmWeChatPreview: true }, '', '#preview');
         return;
       }
 
@@ -344,12 +302,12 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
   const handleDownload = async () => {
     try {
-      const newWindow = isWeChat ? openBlankWindow() : null;
       const url = await ensureGeneratedImage();
       if (!url) return;
 
       if (isWeChat) {
-        await renderImageInWindow(newWindow, url);
+        setWeChatPreviewUrl(url);
+        window.history.pushState({ cmWeChatPreview: true }, '', '#preview');
         return;
       }
       await downloadDataUrl(url, `color-muse-${Date.now()}.png`);
@@ -398,6 +356,20 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
           </>
         )}
       </div>
+
+      {isWeChat && weChatPreviewUrl ? (
+        <div className="fixed inset-0 z-50 bg-[#e9e9e9]">
+          <div className="absolute left-1/2 top-4 -translate-x-1/2 bg-white/90 border border-black/5 text-black/55 px-4 py-2 rounded-full text-[13px] font-sans tracking-[0.08em] whitespace-nowrap">
+            点击右上角 “···” 保存图片到相册
+          </div>
+          <img
+            src={weChatPreviewUrl}
+            alt="Color Muse Export"
+            className="w-screen h-screen object-contain select-none"
+            draggable={false}
+          />
+        </div>
+      ) : null}
     </div>
   );
 };
