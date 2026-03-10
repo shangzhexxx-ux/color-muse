@@ -9,6 +9,17 @@ interface GalleryCardProps {
   palette: ColorPalette;
 }
 
+const proxy = (url: string) => {
+  return fetch(url)
+    .then((response) => response.blob())
+    .then((blob) => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    }));
+}
+
 const GalleryCard = ({ palette }: GalleryCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -17,14 +28,23 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     const generate = async () => {
       if (!cardRef.current) return;
       try {
-        const dataUrl = await toPng(cardRef.current, { cacheBust: true, pixelRatio: 1.5 });
+        // @ts-ignore
+        const dataUrl = await toPng(cardRef.current, { 
+          cacheBust: true, 
+          pixelRatio: 2.5, // 提高到 2.5 倍以获得超高清质量
+          backgroundColor: '#FFFFFF', // 确保背景是纯白
+          fetchRequest: proxy, // 使用代理解决跨域图片无法渲染的问题
+          style: {
+            borderRadius: '1rem', // 确保图片中也保留圆角
+          }
+        });
         setGeneratedImage(dataUrl);
       } catch (error) {
         console.error('Could not generate image', error);
       }
     };
 
-    const timer = setTimeout(generate, 500); // Delay to ensure DOM is ready
+    const timer = setTimeout(generate, 800); // 稍微增加延迟，确保图片完全加载
     return () => clearTimeout(timer);
   }, [palette]);
 
@@ -32,11 +52,12 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     if (!generatedImage) return alert('图片仍在生成中，请稍候...');
     try {
       const blob = await (await fetch(generatedImage)).blob();
-      const file = new File([blob], 'color-muse.png', { type: blob.type });
+      const file = new File([blob], 'color-muse.png', { type: 'image/png' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file] });
       } else {
-        alert('你的浏览器不支持分享文件。');
+        // 改进手机端分享失败后的降级方案：直接打开图片 DataURL，不包装在 HTML 中
+        window.location.href = generatedImage;
       }
     } catch (error) {
       console.error('Share failed', error);
@@ -48,7 +69,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     if (!generatedImage) return alert('图片仍在生成中，请稍候...');
     const link = document.createElement('a');
     link.href = generatedImage;
-    link.download = 'color-muse.png';
+    link.download = `color-muse-${Date.now()}.png`;
     link.click();
   };
 
