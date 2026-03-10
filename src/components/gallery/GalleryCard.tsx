@@ -15,7 +15,6 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   const generateRef = useRef<() => Promise<string | null>>(async () => null);
   const isGeneratingRef = useRef(false);
   const generatedImageRef = useRef<string | null>(null);
-  const [weChatToastVisible, setWeChatToastVisible] = useState(false);
 
   const downloadDataUrl = async (dataUrl: string, filename: string) => {
     const blob = await (await fetch(dataUrl)).blob();
@@ -54,12 +53,6 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       newWindow.location.replace(dataUrl);
     }
   };
-
-  useEffect(() => {
-    if (!weChatToastVisible) return;
-    const timer = window.setTimeout(() => setWeChatToastVisible(false), 1800);
-    return () => window.clearTimeout(timer);
-  }, [weChatToastVisible]);
 
   useEffect(() => {
     const drawRoundedRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => {
@@ -101,6 +94,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         const isWeChatLocal = /MicroMessenger/i.test(navigator.userAgent);
         const scale = targetScale ?? (isWeChatLocal || isMobile ? 2 : 3);
+        const bgColor = '#FBF9F6';
 
         let cardWidthCss = cardRef.current?.getBoundingClientRect().width ?? 0;
         if (cardWidthCss < 10) {
@@ -110,7 +104,9 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         }
         if (cardWidthCss < 200) cardWidthCss = 384;
         const cardWidth = Math.round(cardWidthCss * scale);
-        const outerPadding = 0;
+        const cardShadowBlur = 40 * scale;
+        const cardShadowOffsetY = 20 * scale;
+        const outerPadding = Math.max(40 * scale, cardShadowBlur + cardShadowOffsetY + 8 * scale);
         const cardRadius = 16 * scale;
         const cardPaddingX = 32 * scale;
         const coverPaddingTop = 16 * scale;
@@ -152,9 +148,18 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         const cardX = outerPadding;
         const cardY = outerPadding;
 
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.08)';
+        ctx.shadowBlur = cardShadowBlur;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = cardShadowOffsetY;
         ctx.fillStyle = '#FFFFFF';
         drawRoundedRect(ctx, cardX, cardY, cardWidth, cardHeight, cardRadius);
         ctx.fill();
+        ctx.restore();
 
         let cursorY = cardY + coverPaddingTop;
 
@@ -168,6 +173,16 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
         const imageX = cardX + cardPaddingX;
         const imageY = cursorY;
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.12)';
+        ctx.shadowBlur = 9 * scale;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 4 * scale;
+        ctx.fillStyle = '#FFFFFF';
+        drawRoundedRect(ctx, imageX, imageY, imageWidth, imageHeight, imageRadius);
+        ctx.fill();
+        ctx.restore();
 
         ctx.save();
         drawRoundedRect(ctx, imageX, imageY, imageWidth, imageHeight, imageRadius);
@@ -251,7 +266,6 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
       if (isWeChat) {
         const newWindow = window.open('about:blank');
-        setWeChatToastVisible(true);
         const blob = await (await fetch(url)).blob();
         const blobUrl = URL.createObjectURL(blob);
         if (newWindow) {
@@ -291,7 +305,6 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
       if (isWeChat) {
         const newWindow = window.open('about:blank');
-        setWeChatToastVisible(true);
         const blob = await (await fetch(url)).blob();
         const blobUrl = URL.createObjectURL(blob);
         if (newWindow) {
@@ -349,11 +362,6 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         )}
       </div>
 
-      {isWeChat && weChatToastVisible ? (
-        <div className="pointer-events-none fixed left-1/2 top-4 -translate-x-1/2 z-50 bg-white/90 border border-black/5 text-black/55 px-4 py-2 rounded-full text-[13px] font-sans tracking-[0.08em] whitespace-nowrap">
-          点击右上角 “...” 保存图片到相册
-        </div>
-      ) : null}
     </div>
   );
 };
