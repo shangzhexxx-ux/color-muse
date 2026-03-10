@@ -8,11 +8,17 @@ const ImageCover = ({ imageUrl }: ImageCoverProps) => {
       <div className="mb-4 text-[11px] text-gray-300 font-sans tracking-[0.4em] uppercase font-bold">
         #COLOR MUSE
       </div>
-      <div className="relative group">
-        <img 
-          src={imageUrl} 
-          alt="Uploaded inspiration" 
-          className="max-h-[400px] w-auto object-contain rounded-lg shadow-md"
+      <div className="relative w-full h-[360px] sm:h-[400px] rounded-lg overflow-hidden shadow-md">
+        <img
+          src={imageUrl}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-60"
+          aria-hidden="true"
+        />
+        <img
+          src={imageUrl}
+          alt="Uploaded inspiration"
+          className="absolute inset-0 w-full h-full object-contain"
         />
       </div>
     </div>
