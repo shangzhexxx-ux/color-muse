@@ -48,7 +48,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     return newWindow;
   };
 
-  const renderImageInWindow = async (newWindow: Window | null, dataUrl: string, returnUrl: string) => {
+  const renderImageInWindow = async (newWindow: Window | null, dataUrl: string) => {
     if (!newWindow) {
       window.location.href = dataUrl;
       return;
@@ -63,40 +63,17 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Color Muse</title>
     <style>
-      html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #fff; }
-      .wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #fff; }
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #FBF9F6; }
+      .wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #FBF9F6; }
       img { width: 100vw; height: 100vh; object-fit: contain; display: block; -webkit-user-select: none; user-select: none; }
-      .bar { position: fixed; left: 0; right: 0; bottom: 16px; display: flex; justify-content: center; pointer-events: none; }
-      .btn { pointer-events: auto; border: 1px solid rgba(0,0,0,0.08); background: rgba(255,255,255,0.92); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 10px 16px; border-radius: 999px; font: 14px system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; color: rgba(0,0,0,0.55); }
+      .tip { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.06); color: rgba(0,0,0,0.55); padding: 10px 14px; border-radius: 999px; font: 13px system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; letter-spacing: 0.08em; }
     </style>
   </head>
   <body>
     <div class="wrap">
       <img src="${dataUrl}" alt="Color Muse Export" />
     </div>
-    <div class="bar">
-      <button class="btn" type="button" id="backBtn">返回</button>
-    </div>
-    <script>
-      (function () {
-        var returnUrl = ${JSON.stringify(returnUrl)};
-        var btn = document.getElementById('backBtn');
-        btn && btn.addEventListener('click', function () {
-          try { window.close(); } catch (e) {}
-          setTimeout(function () {
-            try {
-              if (window.history && window.history.length > 1) {
-                window.history.back();
-              } else {
-                window.location.replace(returnUrl);
-              }
-            } catch (e) {
-              window.location.replace(returnUrl);
-            }
-          }, 50);
-        });
-      })();
-    </script>
+    <div class="tip">点击右上角 “…” 选择 分享/保存图片</div>
   </body>
 </html>`);
       newWindow.document.close();
@@ -333,7 +310,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
       if (isWeChat) {
         const newWindow = openBlankWindow();
-        await renderImageInWindow(newWindow, url, window.location.href);
+        await renderImageInWindow(newWindow, url);
         return;
       }
 
@@ -365,7 +342,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       if (!url) return;
 
       if (isWeChat) {
-        await renderImageInWindow(newWindow, url, window.location.href);
+        await renderImageInWindow(newWindow, url);
         return;
       }
       await downloadDataUrl(url, `color-muse-${Date.now()}.png`);
