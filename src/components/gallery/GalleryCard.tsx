@@ -42,7 +42,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     if (!newWindow) return null;
     try {
       newWindow.document.open();
-      newWindow.document.write('<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#FBF9F6;color:#9CA3AF">生成中...</body></html>');
+      newWindow.document.write('<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#ececec;color:#9CA3AF">生成中...</body></html>');
       newWindow.document.close();
     } catch {
       // ignore
@@ -65,17 +65,17 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Color Muse</title>
     <style>
-      html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #FBF9F6; }
-      .wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #FBF9F6; }
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #ececec; }
+      .wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #ececec; }
       img { width: 100vw; height: 100vh; object-fit: contain; display: block; -webkit-user-select: none; user-select: none; }
-      .tip { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.06); color: rgba(0,0,0,0.55); padding: 10px 14px; border-radius: 999px; font: 13px system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; letter-spacing: 0.08em; }
+      .tip { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.06); color: rgba(0,0,0,0.55); padding: 10px 14px; border-radius: 999px; font: 13px system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; letter-spacing: 0.08em; white-space: nowrap; }
     </style>
   </head>
   <body>
     <div class="wrap">
       <img src="${dataUrl}" alt="Color Muse Export" />
     </div>
-    <div class="tip">点击右上角 “···” 分享/下载图片，返回可回到生产页</div>
+    <div class="tip">点击右上角 “···” 分享/保存图片到相册</div>
   </body>
 </html>`);
       newWindow.document.close();
