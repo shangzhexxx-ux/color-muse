@@ -65,10 +65,11 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
           pixelRatio: 4,
           backgroundColor: '#FBF9F6',
           fetchRequest: proxy,
-          filter: (node: HTMLElement) => {
+          filter: (node: unknown) => {
+            if (!(node instanceof Element)) return true;
             const tagName = node.tagName.toUpperCase();
             const isButton = tagName === 'BUTTON';
-            const isButtonIcon = tagName === 'SVG' || (node.parentElement?.tagName.toUpperCase() === 'BUTTON');
+            const isButtonIcon = tagName === 'SVG' || node.parentElement?.tagName.toUpperCase() === 'BUTTON';
             return !isButton && !isButtonIcon;
           },
         });
