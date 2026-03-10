@@ -52,7 +52,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   };
 
   return (
-    <div className="relative group">
+    <div className="relative">
       <div ref={cardRef} className="bg-white rounded-2xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] w-full max-w-sm">
         <ImageCover imageUrl={palette.imageUrl} />
         <div className="flex justify-center items-center gap-x-3 pt-3 pb-5 px-3">
@@ -62,7 +62,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         </div>
       </div>
       
-      <div className="absolute -top-4 -right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+      <div className="absolute -top-5 -right-5 flex flex-col gap-2">
         {!generatedImage ? (
           <button 
             onClick={generateImage}
