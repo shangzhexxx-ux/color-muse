@@ -1,13 +1,9 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
 import { ColorPalette } from "../../types";
 import ColorDot from "../shared/ColorDot";
 import ImageCover from "./ImageCover";
-import { Download } from 'lucide-react';
-
-interface GalleryCardProps {
-  palette: ColorPalette;
-}
+import { Download, Share2 } from 'lucide-react';
 
 const proxy = (url: string) => {
   return fetch(url)
@@ -20,15 +16,18 @@ const proxy = (url: string) => {
     }));
 }
 
+interface GalleryCardProps {
+  palette: ColorPalette;
+}
+
 const GalleryCard = ({ palette }: GalleryCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const handleSaveImage = async () => {
-    if (!cardRef.current) {
-      alert('错误：找不到卡片元素。');
-      return;
-    }
-
+  const generateImage = async () => {
+    if (!cardRef.current) return;
+    setIsGenerating(true);
     try {
       // @ts-ignore
       const dataUrl = await toPng(cardRef.current, { 
@@ -36,29 +35,36 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         pixelRatio: 2,
         fetchRequest: proxy,
       });
-
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-      if (isMobile) {
-        // 移动端：在新标签页打开，让用户长按保存
-        const newWindow = window.open();
-        if (newWindow) {
-          newWindow.document.write(`<style>body{margin:0; background:#eee;} img{max-width:100%; height:auto;}</style><img src="${dataUrl}" alt="Color Muse Palette" />`);
-        }
-      } else {
-        // 桌面端：创建虚拟链接并点击下载
-        const link = document.createElement('a');
-        link.download = `color-muse-${Date.now()}.png`;
-        link.href = dataUrl;
-        link.click();
-      }
-    } catch (err: any) {
-      alert(`图片生成失败，请稍后重试: ${err.message}`);
+      setGeneratedImage(dataUrl);
+    } catch (err) {
+      alert('图片生成失败，请稍后重试。');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
+  const handleShare = async () => {
+    if (!generatedImage) return;
+    const blob = await (await fetch(generatedImage)).blob();
+    const imageFile = new File([blob], `color-muse-${Date.now()}.png`, { type: 'image/png' });
+
+    if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+      await navigator.share({ files: [imageFile] });
+    } else {
+      alert('你的浏览器不支持分享功能。');
+    }
+  };
+
+  const handleDownload = () => {
+    if (!generatedImage) return;
+    const link = document.createElement('a');
+    link.download = `color-muse-${Date.now()}.png`;
+    link.href = generatedImage;
+    link.click();
+  };
+
   return (
-    <div className="relative">
+    <div className="relative group">
       <div ref={cardRef} className="bg-white rounded-2xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] w-full max-w-sm">
         <ImageCover imageUrl={palette.imageUrl} />
         <div className="flex justify-center items-center gap-x-3 pt-3 pb-5 px-3">
@@ -67,12 +73,27 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
           ))}
         </div>
       </div>
-      <button 
-        onClick={handleSaveImage}
-        className="absolute -top-4 -right-4 bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition-colors"
-      >
-        <Download className="w-5 h-5 text-gray-600" />
-      </button>
+      
+      <div className="absolute -top-4 -right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        {!generatedImage ? (
+          <button 
+            onClick={generateImage}
+            disabled={isGenerating}
+            className="bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+          >
+            {isGenerating ? '...' : <Download className="w-5 h-5 text-gray-600" />}
+          </button>
+        ) : (
+          <>
+            <button onClick={handleShare} className="bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition-colors">
+              <Share2 className="w-5 h-5 text-gray-600" />
+            </button>
+            <button onClick={handleDownload} className="bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition-colors">
+              <Download className="w-5 h-5 text-gray-600" />
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 };
