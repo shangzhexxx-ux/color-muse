@@ -11,6 +11,8 @@ interface GalleryCardProps {
 const GalleryCard = ({ palette }: GalleryCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const generateRef = useRef<() => Promise<string | null>>(async () => null);
 
   const downloadDataUrl = async (dataUrl: string, filename: string) => {
     const blob = await (await fetch(dataUrl)).blob();
@@ -33,9 +35,28 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
   const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
 
-  const openImageAsStandalone = (dataUrl: string) => {
-    const newWindow = window.open(dataUrl);
-    if (newWindow) return;
+  const openBlankWindow = () => {
+    const newWindow = window.open('about:blank');
+    if (!newWindow) return null;
+    try {
+      newWindow.document.open();
+      newWindow.document.write('<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#FBF9F6;color:#9CA3AF">生成中...</body></html>');
+      newWindow.document.close();
+    } catch {
+      // ignore
+    }
+    return newWindow;
+  };
+
+  const navigateWindowToDataUrl = (newWindow: Window | null, dataUrl: string) => {
+    if (newWindow) {
+      try {
+        newWindow.location.replace(dataUrl);
+        return;
+      } catch {
+        // ignore
+      }
+    }
     window.location.href = dataUrl;
   };
 
@@ -88,13 +109,21 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         img.src = src;
       });
 
-    const generate = async () => {
-      setGeneratedImage(null);
+    const generate = async (targetScale?: number): Promise<string | null> => {
+      if (isGenerating) return generatedImage ?? null;
+      setIsGenerating(true);
       try {
-        const scale = 3;
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const scale = targetScale ?? (isWeChat || isMobile ? 2 : 3);
         const bgColor = '#FBF9F6';
 
-        const cardWidthCss = cardRef.current?.getBoundingClientRect().width ?? 384;
+        let cardWidthCss = cardRef.current?.getBoundingClientRect().width ?? 0;
+        if (cardWidthCss < 10) {
+          await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+          await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+          cardWidthCss = cardRef.current?.getBoundingClientRect().width ?? 0;
+        }
+        if (cardWidthCss < 200) cardWidthCss = 384;
         const cardWidth = Math.round(cardWidthCss * scale);
         const cardShadowBlur = 40 * scale;
         const cardShadowOffsetY = 20 * scale;
@@ -116,7 +145,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         const dotGapX = 20 * scale;
 
         const img = await loadImage(palette.imageUrl);
-        const imageWidth = cardWidth - cardPaddingX * 2;
+        const imageWidth = Math.max(1, cardWidth - cardPaddingX * 2);
         const imageHeight = Math.round(imageWidth * (img.naturalHeight / img.naturalWidth));
 
         const paletteRowHeight = dotSize + dotTextGap + dotTextSize;
@@ -135,7 +164,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         canvas.height = cardHeight + outerPadding * 2;
 
         const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+        if (!ctx) return null;
 
         ctx.fillStyle = bgColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -210,56 +239,82 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
           ctx.fillText(color, cx, cursorY + dotSize + dotTextGap);
         });
 
-        setGeneratedImage(canvas.toDataURL('image/png'));
+        const dataUrl = canvas.toDataURL('image/png');
+        setGeneratedImage(dataUrl);
+        return dataUrl;
       } catch (error) {
         console.error('Could not generate image', error);
+        return null;
+      } finally {
+        setIsGenerating(false);
       }
     };
 
-    const timer = setTimeout(generate, 1000); // 增加等待时间确保渲染完全
+    generateRef.current = async () => {
+      const result = await generate();
+      if (result) return result;
+      const retry = await generate(1.5);
+      return retry;
+    };
+
+    setGeneratedImage(null);
+    const timer = setTimeout(() => {
+      void generateRef.current();
+    }, 300);
     return () => clearTimeout(timer);
-  }, [palette]);
+  }, [palette, generatedImage, isGenerating, isWeChat]);
+
+  const ensureGeneratedImage = async () => {
+    if (generatedImage) return generatedImage;
+    return generateRef.current();
+  };
 
   const handleShare = async () => {
-    if (!generatedImage) return;
     try {
+      const url = await ensureGeneratedImage();
+      if (!url) return;
+
       if (isWeChat) {
-        openImageAsStandalone(generatedImage);
+        const newWindow = openBlankWindow();
+        navigateWindowToDataUrl(newWindow, url);
         return;
       }
 
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      const blob = await (await fetch(generatedImage)).blob();
+      const blob = await (await fetch(url)).blob();
       const imageFile = new File([blob], `color-muse-${Date.now()}.png`, { type: 'image/png' });
 
       if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
         await navigator.share({ files: [imageFile] });
       } else {
         if (isMobile) {
-          await openImageOnlyPreview(generatedImage);
+          await openImageOnlyPreview(url);
         } else if (navigator.share) {
-          await navigator.share({ url: generatedImage });
+          await navigator.share({ url });
         } else {
-          await openImageOnlyPreview(generatedImage);
+          await openImageOnlyPreview(url);
         }
       }
     } catch (err) {
       console.error('Share failed:', err);
-      await openImageOnlyPreview(generatedImage);
+      if (generatedImage) await openImageOnlyPreview(generatedImage);
     }
   };
 
   const handleDownload = async () => {
-    if (!generatedImage) return;
     try {
+      const newWindow = isWeChat ? openBlankWindow() : null;
+      const url = await ensureGeneratedImage();
+      if (!url) return;
+
       if (isWeChat) {
-        openImageAsStandalone(generatedImage);
+        navigateWindowToDataUrl(newWindow, url);
         return;
       }
-      await downloadDataUrl(generatedImage, `color-muse-${Date.now()}.png`);
+      await downloadDataUrl(url, `color-muse-${Date.now()}.png`);
     } catch (err) {
       console.error('Download failed:', err);
-      await openImageOnlyPreview(generatedImage);
+      if (generatedImage) await openImageOnlyPreview(generatedImage);
     }
   };
 
@@ -277,14 +332,14 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       <div className="absolute -top-5 -right-5 flex flex-col gap-2">
         <button 
           onClick={handleShare}
-          disabled={!generatedImage}
+          disabled={isGenerating}
           className="bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
         >
           <Share2 className={`w-5 h-5 ${!generatedImage ? 'text-gray-300' : 'text-gray-600'}`} />
         </button>
         <button 
           onClick={handleDownload}
-          disabled={!generatedImage}
+          disabled={isGenerating}
           className="bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
         >
           <Download className={`w-5 h-5 ${!generatedImage ? 'text-gray-300' : 'text-gray-600'}`} />
