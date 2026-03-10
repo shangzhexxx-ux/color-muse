@@ -75,7 +75,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     <div class="wrap">
       <img src="${dataUrl}" alt="Color Muse Export" />
     </div>
-    <div class="tip">点击右上角 “···” 、保存图片到相册</div>
+    <div class="tip">点击右上角 “···” 保存图片到相册</div>
   </body>
 </html>`);
       newWindow.document.close();
@@ -317,11 +317,6 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
       if (isWeChat) {
         const newWindow = openBlankWindow();
-        try {
-          window.localStorage.setItem('cm_return_home', '1');
-        } catch {
-          // ignore
-        }
         await renderImageInWindow(newWindow, url);
         return;
       }
@@ -354,11 +349,6 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       if (!url) return;
 
       if (isWeChat) {
-        try {
-          window.localStorage.setItem('cm_return_home', '1');
-        } catch {
-          // ignore
-        }
         await renderImageInWindow(newWindow, url);
         return;
       }

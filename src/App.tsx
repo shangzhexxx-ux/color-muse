@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import GalleryCard from "./components/gallery/GalleryCard";
 import Uploader from "./components/shared/Uploader";
 import { ColorPalette } from "./types";
@@ -6,31 +6,6 @@ import ColorThief from 'colorthief';
 
 const App: React.FC = () => {
   const [palette, setPalette] = useState<ColorPalette | null>(null);
-
-  useEffect(() => {
-    const maybeReturnHome = () => {
-      try {
-        const flag = window.localStorage.getItem('cm_return_home');
-        if (flag === '1') {
-          window.localStorage.removeItem('cm_return_home');
-          setPalette(null);
-        }
-      } catch {
-        // ignore
-      }
-    };
-
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') maybeReturnHome();
-    };
-
-    window.addEventListener('focus', maybeReturnHome);
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => {
-      window.removeEventListener('focus', maybeReturnHome);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
-  }, []);
 
   const handleImageUpload = (imageUrl: string) => {
     const img = new Image();
