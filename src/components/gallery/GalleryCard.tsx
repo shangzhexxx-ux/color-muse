@@ -13,6 +13,8 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const generateRef = useRef<() => Promise<string | null>>(async () => null);
+  const isGeneratingRef = useRef(false);
+  const generatedImageRef = useRef<string | null>(null);
 
   const downloadDataUrl = async (dataUrl: string, filename: string) => {
     const blob = await (await fetch(dataUrl)).blob();
@@ -40,7 +42,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     if (!newWindow) return null;
     try {
       newWindow.document.open();
-      newWindow.document.write('<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#fff;color:#9CA3AF">生成中...</body></html>');
+      newWindow.document.write('<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#FBF9F6;color:#9CA3AF">生成中...</body></html>');
       newWindow.document.close();
     } catch {
       // ignore
@@ -73,7 +75,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     <div class="wrap">
       <img src="${dataUrl}" alt="Color Muse Export" />
     </div>
-    <div class="tip">点击右上角 “…” 选择 分享/保存图片</div>
+    <div class="tip">点击右上角 “···” 分享/下载图片，返回可回到生产页</div>
   </body>
 </html>`);
       newWindow.document.close();
@@ -136,11 +138,13 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       });
 
     const generate = async (targetScale?: number): Promise<string | null> => {
-      if (isGenerating) return generatedImage ?? null;
+      if (isGeneratingRef.current) return generatedImageRef.current;
+      isGeneratingRef.current = true;
       setIsGenerating(true);
       try {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        const scale = targetScale ?? (isWeChat || isMobile ? 2 : 3);
+        const isWeChatLocal = /MicroMessenger/i.test(navigator.userAgent);
+        const scale = targetScale ?? (isWeChatLocal || isMobile ? 2 : 3);
         const bgColor = '#FBF9F6';
 
         let cardWidthCss = cardRef.current?.getBoundingClientRect().width ?? 0;
@@ -266,12 +270,14 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         });
 
         const dataUrl = canvas.toDataURL('image/png');
+        generatedImageRef.current = dataUrl;
         setGeneratedImage(dataUrl);
         return dataUrl;
       } catch (error) {
         console.error('Could not generate image', error);
         return null;
       } finally {
+        isGeneratingRef.current = false;
         setIsGenerating(false);
       }
     };
@@ -283,24 +289,25 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       return retry;
     };
 
+    generatedImageRef.current = null;
     setGeneratedImage(null);
     const timer = setTimeout(() => {
       void generateRef.current();
     }, 300);
     return () => clearTimeout(timer);
-  }, [palette, generatedImage, isGenerating, isWeChat]);
+  }, [palette]);
 
   const ensureGeneratedImage = async () => {
-    if (generatedImage) return generatedImage;
+    if (generatedImageRef.current) return generatedImageRef.current;
 
     for (let i = 0; i < 20; i += 1) {
       const result = await generateRef.current();
       if (result) return result;
-      if (generatedImage) return generatedImage;
+      if (generatedImageRef.current) return generatedImageRef.current;
       await new Promise<void>((resolve) => setTimeout(resolve, 50));
     }
 
-    return generatedImage;
+    return generatedImageRef.current;
   };
 
   const handleShare = async () => {
@@ -369,14 +376,14 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
           disabled={isGenerating}
           className="bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
         >
-          <Share2 className={`w-5 h-5 ${!generatedImage ? 'text-gray-300' : 'text-gray-600'}`} />
+          <Share2 className={`w-5 h-5 ${isGenerating || !generatedImage ? 'text-gray-300' : 'text-gray-600'}`} />
         </button>
         <button 
           onClick={handleDownload}
           disabled={isGenerating}
           className="bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
         >
-          <Download className={`w-5 h-5 ${!generatedImage ? 'text-gray-300' : 'text-gray-600'}`} />
+          <Download className={`w-5 h-5 ${isGenerating || !generatedImage ? 'text-gray-300' : 'text-gray-600'}`} />
         </button>
       </div>
     </div>
