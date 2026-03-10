@@ -12,6 +12,25 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
 
+  const downloadDataUrl = async (dataUrl: string, filename: string) => {
+    const blob = await (await fetch(dataUrl)).blob();
+    const blobUrl = URL.createObjectURL(blob);
+    try {
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      link.rel = 'noopener';
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch {
+      window.location.href = blobUrl;
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    }
+  };
+
   const openImageOnlyPreview = async (dataUrl: string) => {
     const newWindow = window.open('about:blank');
     if (!newWindow) {
@@ -71,7 +90,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         const cardWidth = Math.round(cardWidthCss * scale);
         const cardShadowBlur = 40 * scale;
         const cardShadowOffsetY = 20 * scale;
-        const outerPadding = cardShadowBlur + cardShadowOffsetY + 8 * scale;
+        const outerPadding = Math.round((cardShadowBlur + cardShadowOffsetY) * 0.5 + 8 * scale);
         const cardRadius = 16 * scale;
         const cardPaddingX = 32 * scale;
         const coverPaddingTop = 16 * scale;
@@ -197,35 +216,34 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     if (!generatedImage) return;
     try {
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        await openImageOnlyPreview(generatedImage);
-        return;
-      }
-
       const blob = await (await fetch(generatedImage)).blob();
       const imageFile = new File([blob], `color-muse-${Date.now()}.png`, { type: 'image/png' });
 
       if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
         await navigator.share({ files: [imageFile] });
       } else {
-        await openImageOnlyPreview(generatedImage);
+        if (isMobile) {
+          await openImageOnlyPreview(generatedImage);
+        } else if (navigator.share) {
+          await navigator.share({ url: generatedImage });
+        } else {
+          await openImageOnlyPreview(generatedImage);
+        }
       }
     } catch (err) {
       console.error('Share failed:', err);
+      await openImageOnlyPreview(generatedImage);
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!generatedImage) return;
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-      void openImageOnlyPreview(generatedImage);
-      return;
+    try {
+      await downloadDataUrl(generatedImage, `color-muse-${Date.now()}.png`);
+    } catch (err) {
+      console.error('Download failed:', err);
+      await openImageOnlyPreview(generatedImage);
     }
-    const link = document.createElement('a');
-    link.download = `color-muse-${Date.now()}.png`;
-    link.href = generatedImage;
-    link.click();
   };
 
   return (
