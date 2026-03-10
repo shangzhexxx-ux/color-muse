@@ -15,6 +15,8 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   const generateRef = useRef<() => Promise<string | null>>(async () => null);
   const isGeneratingRef = useRef(false);
   const generatedImageRef = useRef<string | null>(null);
+  const [weChatToastVisible, setWeChatToastVisible] = useState(false);
+  const [weChatToastText, setWeChatToastText] = useState('');
 
   const downloadDataUrl = async (dataUrl: string, filename: string) => {
     const blob = await (await fetch(dataUrl)).blob();
@@ -37,6 +39,20 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
   const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
 
+  const dataUrlToBlob = (dataUrl: string) => {
+    const commaIndex = dataUrl.indexOf(',');
+    const header = commaIndex >= 0 ? dataUrl.slice(0, commaIndex) : '';
+    const base64 = commaIndex >= 0 ? dataUrl.slice(commaIndex + 1) : dataUrl;
+    const mimeMatch = header.match(/data:([^;]+);base64/i);
+    const mime = mimeMatch?.[1] ?? 'application/octet-stream';
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new Blob([bytes], { type: mime });
+  };
+
   const openImageOnlyPreview = async (dataUrl: string) => {
     const newWindow = window.open('about:blank');
     if (!newWindow) {
@@ -53,6 +69,12 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       newWindow.location.replace(dataUrl);
     }
   };
+
+  useEffect(() => {
+    if (!weChatToastVisible) return;
+    const timer = window.setTimeout(() => setWeChatToastVisible(false), 1800);
+    return () => window.clearTimeout(timer);
+  }, [weChatToastVisible]);
 
   useEffect(() => {
     const drawRoundedRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => {
@@ -265,8 +287,11 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       if (!url) return;
 
       if (isWeChat) {
-        const blob = await (await fetch(url)).blob();
-        const blobUrl = URL.createObjectURL(blob);
+        setWeChatToastText('点击右上角 “...” 保存图片到相册');
+        setWeChatToastVisible(true);
+        const dataUrl = generatedImageRef.current;
+        if (!dataUrl) return;
+        const blobUrl = URL.createObjectURL(dataUrlToBlob(dataUrl));
         window.location.assign(blobUrl);
         return;
       }
@@ -298,8 +323,15 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       if (!url) return;
 
       if (isWeChat) {
-        const blob = await (await fetch(url)).blob();
-        const blobUrl = URL.createObjectURL(blob);
+        const dataUrl = generatedImageRef.current;
+        if (!dataUrl) {
+          setWeChatToastText('图片生成中，请稍后再点下载');
+          setWeChatToastVisible(true);
+          return;
+        }
+        setWeChatToastText('点击右上角 “...” 保存图片到相册');
+        setWeChatToastVisible(true);
+        const blobUrl = URL.createObjectURL(dataUrlToBlob(dataUrl));
         window.location.assign(blobUrl);
         return;
       }
@@ -325,7 +357,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         {isWeChat ? (
           <button 
             onClick={handleDownload}
-            disabled={isGenerating}
+            disabled={false}
             className="bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
           >
             <Download className={`w-5 h-5 ${isGenerating || !generatedImage ? 'text-gray-300' : 'text-gray-600'}`} />
@@ -349,6 +381,12 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
           </>
         )}
       </div>
+
+      {isWeChat && weChatToastVisible ? (
+        <div className="pointer-events-none fixed left-1/2 top-4 -translate-x-1/2 z-50 bg-white/90 border border-black/5 text-black/55 px-4 py-2 rounded-full text-[13px] font-sans tracking-[0.08em] whitespace-nowrap">
+          {weChatToastText}
+        </div>
+      ) : null}
 
     </div>
   );
