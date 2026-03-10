@@ -1,5 +1,4 @@
 import { useRef, useState, useEffect } from 'react';
-import { toPng } from 'html-to-image';
 import { ColorPalette } from "../../types";
 import ColorDot from "../shared/ColorDot";
 import ImageCover from "./ImageCover";
@@ -24,66 +23,148 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   };
 
   useEffect(() => {
+    const drawRoundedRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => {
+      const radius = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.arcTo(x + w, y, x + w, y + h, radius);
+      ctx.arcTo(x + w, y + h, x, y + h, radius);
+      ctx.arcTo(x, y + h, x, y, radius);
+      ctx.arcTo(x, y, x + w, y, radius);
+      ctx.closePath();
+    };
+
+    const loadImage = (src: string) =>
+      new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.decoding = 'async';
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('image load failed'));
+        img.src = src;
+      });
+
     const generate = async () => {
-      if (!cardRef.current) return;
       setGeneratedImage(null);
-      const rect = cardRef.current.getBoundingClientRect();
-      const exportRoot = document.createElement('div');
-      exportRoot.style.position = 'fixed';
-      exportRoot.style.left = '0';
-      exportRoot.style.top = '0';
-      exportRoot.style.padding = '40px';
-      exportRoot.style.background = '#FBF9F6';
-      exportRoot.style.display = 'flex';
-      exportRoot.style.alignItems = 'center';
-      exportRoot.style.justifyContent = 'center';
-      exportRoot.style.pointerEvents = 'none';
-      exportRoot.style.boxSizing = 'border-box';
-      exportRoot.style.transform = 'translateX(-200vw)';
-
-      const cardClone = cardRef.current.cloneNode(true) as HTMLDivElement;
-      cardClone.style.width = `${Math.ceil(rect.width)}px`;
-      cardClone.style.maxWidth = `${Math.ceil(rect.width)}px`;
-      cardClone.style.minWidth = `${Math.ceil(rect.width)}px`;
-      cardClone.style.transform = 'scale(0.85)';
-      cardClone.style.transformOrigin = 'center';
-      exportRoot.appendChild(cardClone);
-
-      document.body.appendChild(exportRoot);
-
       try {
-        const images = Array.from(exportRoot.querySelectorAll('img'));
-        await Promise.all(
-          images.map((img) => {
-            const anyImg = img as HTMLImageElement;
-            if (anyImg.complete && anyImg.naturalWidth > 0) return Promise.resolve();
-            return new Promise<void>((resolve) => {
-              anyImg.onload = () => resolve();
-              anyImg.onerror = () => resolve();
-            });
-          })
-        );
+        const scale = 3;
+        const bgColor = '#FBF9F6';
 
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        const cardWidth = 384 * scale;
+        const outerPadding = 40 * scale;
+        const cardRadius = 16 * scale;
+        const cardPaddingX = 32 * scale;
+        const coverPaddingTop = 16 * scale;
+        const coverPaddingBottom = 16 * scale;
+        const headerFontSize = 11 * scale;
+        const headerGap = 16 * scale;
+        const imageRadius = 12 * scale;
 
-        const dataUrl = await (toPng as unknown as (node: HTMLElement, options: unknown) => Promise<string>)(exportRoot, {
-          cacheBust: true,
-          pixelRatio: 4,
-          backgroundColor: '#FBF9F6',
-          filter: (node: unknown) => {
-            if (!(node instanceof Element)) return true;
-            const tagName = node.tagName.toUpperCase();
-            const isButton = tagName === 'BUTTON';
-            const isButtonIcon = tagName === 'SVG' || node.parentElement?.tagName.toUpperCase() === 'BUTTON';
-            return !isButton && !isButtonIcon;
-          },
+        const paletteTopPadding = 2 * scale;
+        const paletteBottomPadding = 20 * scale;
+        const dotSize = 40 * scale;
+        const dotRadius = dotSize / 2;
+        const dotTextSize = 10 * scale;
+        const dotTextGap = 8 * scale;
+        const dotGapX = 20 * scale;
+
+        const img = await loadImage(palette.imageUrl);
+        const imageWidth = cardWidth - cardPaddingX * 2;
+        const imageHeight = Math.round(imageWidth * (img.naturalHeight / img.naturalWidth));
+
+        const paletteRowHeight = dotSize + dotTextGap + dotTextSize;
+        const cardHeight =
+          coverPaddingTop +
+          headerFontSize +
+          headerGap +
+          imageHeight +
+          coverPaddingBottom +
+          paletteTopPadding +
+          paletteRowHeight +
+          paletteBottomPadding;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = cardWidth + outerPadding * 2;
+        canvas.height = cardHeight + outerPadding * 2;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const cardX = outerPadding;
+        const cardY = outerPadding;
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.08)';
+        ctx.shadowBlur = 40 * scale;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 20 * scale;
+        ctx.fillStyle = '#FFFFFF';
+        drawRoundedRect(ctx, cardX, cardY, cardWidth, cardHeight, cardRadius);
+        ctx.fill();
+        ctx.restore();
+
+        let cursorY = cardY + coverPaddingTop;
+
+        ctx.fillStyle = '#D1D5DB';
+        ctx.font = `900 ${headerFontSize}px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('#COLOR MUSE', cardX + cardWidth / 2, cursorY);
+
+        cursorY += headerFontSize + headerGap;
+
+        const imageX = cardX + cardPaddingX;
+        const imageY = cursorY;
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.12)';
+        ctx.shadowBlur = 18 * scale;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 8 * scale;
+        ctx.fillStyle = '#FFFFFF';
+        drawRoundedRect(ctx, imageX, imageY, imageWidth, imageHeight, imageRadius);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        drawRoundedRect(ctx, imageX, imageY, imageWidth, imageHeight, imageRadius);
+        ctx.clip();
+        ctx.drawImage(img, imageX, imageY, imageWidth, imageHeight);
+        ctx.restore();
+
+        cursorY += imageHeight + coverPaddingBottom + paletteTopPadding;
+
+        const dotsCount = palette.colors.length;
+        const dotsTotalWidth = dotsCount * dotSize + (dotsCount - 1) * dotGapX;
+        const dotsStartX = cardX + (cardWidth - dotsTotalWidth) / 2;
+
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.font = `${dotTextSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
+        ctx.fillStyle = '#4B5563';
+
+        palette.colors.forEach((color, idx) => {
+          const cx = dotsStartX + idx * (dotSize + dotGapX) + dotRadius;
+          const cy = cursorY + dotRadius;
+
+          ctx.beginPath();
+          ctx.arc(cx, cy, dotRadius, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.fill();
+
+          ctx.lineWidth = 1 * scale;
+          ctx.strokeStyle = '#E5E7EB';
+          ctx.stroke();
+
+          ctx.fillStyle = '#4B5563';
+          ctx.fillText(color, cx, cursorY + dotSize + dotTextGap);
         });
-        setGeneratedImage(dataUrl);
+
+        setGeneratedImage(canvas.toDataURL('image/png'));
       } catch (error) {
         console.error('Could not generate image', error);
-      } finally {
-        exportRoot.remove();
       }
     };
 
