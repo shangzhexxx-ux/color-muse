@@ -14,6 +14,7 @@ const ImageCover = ({ imageUrl }: ImageCoverProps) => {
           alt=""
           className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-60"
           aria-hidden="true"
+          data-export-ignore="true"
         />
         <img
           src={imageUrl}

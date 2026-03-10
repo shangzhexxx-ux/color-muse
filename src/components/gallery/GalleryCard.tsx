@@ -9,17 +9,6 @@ interface GalleryCardProps {
   palette: ColorPalette;
 }
 
-const proxy = (url: string) => {
-  return fetch(url)
-    .then((response) => response.blob())
-    .then((blob) => new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    }));
-}
-
 const GalleryCard = ({ palette }: GalleryCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -52,7 +41,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         await Promise.all(
           images.map((img) => {
             const anyImg = img as HTMLImageElement;
-            if (anyImg.complete) return Promise.resolve();
+            if (anyImg.complete && anyImg.naturalWidth > 0) return Promise.resolve();
             return new Promise<void>((resolve) => {
               anyImg.onload = () => resolve();
               anyImg.onerror = () => resolve();
@@ -64,9 +53,10 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
           cacheBust: true,
           pixelRatio: 4,
           backgroundColor: '#FBF9F6',
-          fetchRequest: proxy,
           filter: (node: unknown) => {
             if (!(node instanceof Element)) return true;
+            if (node.hasAttribute('data-export-ignore')) return false;
+            if (node.closest('[data-export-ignore]')) return false;
             const tagName = node.tagName.toUpperCase();
             const isButton = tagName === 'BUTTON';
             const isButtonIcon = tagName === 'SVG' || node.parentElement?.tagName.toUpperCase() === 'BUTTON';
