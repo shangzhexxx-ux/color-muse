@@ -5,17 +5,6 @@ import ColorDot from "../shared/ColorDot";
 import ImageCover from "./ImageCover";
 import { Download, Share2 } from 'lucide-react';
 
-const proxy = (url: string) => {
-  return fetch(url)
-    .then((response) => response.blob())
-    .then((blob) => new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    }));
-}
-
 interface GalleryCardProps {
   palette: ColorPalette;
 }
@@ -29,14 +18,13 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     if (!cardRef.current) return;
     setIsGenerating(true);
     try {
-      // @ts-ignore
       const dataUrl = await toPng(cardRef.current, { 
         cacheBust: true, 
         pixelRatio: 2,
-        fetchRequest: proxy,
       });
       setGeneratedImage(dataUrl);
     } catch (err) {
+      console.error('Image generation failed:', err);
       alert('图片生成失败，请稍后重试。');
     } finally {
       setIsGenerating(false);
