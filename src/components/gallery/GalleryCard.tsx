@@ -13,15 +13,25 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
 
+  const openImageOnlyPreview = (dataUrl: string) => {
+    const newWindow = window.open();
+    if (!newWindow) return;
+    newWindow.document.open();
+    newWindow.document.write(
+      `<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="${dataUrl}" style="max-width:100%;height:auto" /></body></html>`
+    );
+    newWindow.document.close();
+  };
+
   useEffect(() => {
     const generate = async () => {
       if (!cardRef.current) return;
+      setGeneratedImage(null);
+      const rect = cardRef.current.getBoundingClientRect();
       const exportRoot = document.createElement('div');
       exportRoot.style.position = 'fixed';
       exportRoot.style.left = '-10000px';
       exportRoot.style.top = '0';
-      exportRoot.style.width = 'fit-content';
-      exportRoot.style.height = 'fit-content';
       exportRoot.style.padding = '40px';
       exportRoot.style.background = '#FBF9F6';
       exportRoot.style.display = 'flex';
@@ -30,6 +40,9 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       exportRoot.style.pointerEvents = 'none';
 
       const cardClone = cardRef.current.cloneNode(true) as HTMLDivElement;
+      cardClone.style.width = `${Math.ceil(rect.width)}px`;
+      cardClone.style.maxWidth = `${Math.ceil(rect.width)}px`;
+      cardClone.style.minWidth = `${Math.ceil(rect.width)}px`;
       cardClone.style.transform = 'scale(0.85)';
       cardClone.style.transformOrigin = 'center';
       exportRoot.appendChild(cardClone);
@@ -76,17 +89,19 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   const handleShare = async () => {
     if (!generatedImage) return;
     try {
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        openImageOnlyPreview(generatedImage);
+        return;
+      }
+
       const blob = await (await fetch(generatedImage)).blob();
       const imageFile = new File([blob], `color-muse-${Date.now()}.png`, { type: 'image/png' });
 
       if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
         await navigator.share({ files: [imageFile] });
       } else {
-        // 分享失败或不支持时，打开预览页供长按保存
-        const newWindow = window.open();
-        if (newWindow) {
-          newWindow.document.write(`<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="${generatedImage}" style="max-width:100%;height:auto" /></body></html>`);
-        }
+        openImageOnlyPreview(generatedImage);
       }
     } catch (err) {
       console.error('Share failed:', err);
@@ -95,6 +110,11 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
   const handleDownload = () => {
     if (!generatedImage) return;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      openImageOnlyPreview(generatedImage);
+      return;
+    }
     const link = document.createElement('a');
     link.download = `color-muse-${Date.now()}.png`;
     link.href = generatedImage;
@@ -105,7 +125,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     <div className="relative">
       <div ref={cardRef} className="bg-white rounded-2xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] w-full max-w-sm">
         <ImageCover imageUrl={palette.imageUrl} />
-        <div className="flex justify-center items-center gap-x-5 pt-1 pb-5 px-6">
+        <div className="flex justify-center items-center gap-x-5 pt-[2px] pb-5 px-6">
           {palette.colors.map((color) => (
             <ColorDot key={color} color={color} />
           ))}
