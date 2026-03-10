@@ -34,6 +34,17 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       ctx.closePath();
     };
 
+    const drawTrackedText = (ctx: CanvasRenderingContext2D, text: string, xCenter: number, y: number, trackingPx: number) => {
+      const chars = Array.from(text);
+      const widths = chars.map((ch) => ctx.measureText(ch).width);
+      const totalWidth = widths.reduce((sum, w) => sum + w, 0) + trackingPx * Math.max(0, chars.length - 1);
+      let x = xCenter - totalWidth / 2;
+      for (let i = 0; i < chars.length; i += 1) {
+        ctx.fillText(chars[i], x, y);
+        x += widths[i] + trackingPx;
+      }
+    };
+
     const loadImage = (src: string) =>
       new Promise<HTMLImageElement>((resolve, reject) => {
         const img = new Image();
@@ -108,10 +119,10 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         let cursorY = cardY + coverPaddingTop;
 
         ctx.fillStyle = '#D1D5DB';
-        ctx.font = `900 ${headerFontSize}px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial`;
+        ctx.font = `700 ${headerFontSize}px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
-        ctx.fillText('#COLOR MUSE', cardX + cardWidth / 2, cursorY);
+        drawTrackedText(ctx, '#COLOR MUSE', cardX + cardWidth / 2, cursorY, headerFontSize * 0.4);
 
         cursorY += headerFontSize + headerGap;
 
@@ -120,9 +131,9 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
         ctx.save();
         ctx.shadowColor = 'rgba(0,0,0,0.12)';
-        ctx.shadowBlur = 18 * scale;
+        ctx.shadowBlur = 9 * scale;
         ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 8 * scale;
+        ctx.shadowOffsetY = 4 * scale;
         ctx.fillStyle = '#FFFFFF';
         drawRoundedRect(ctx, imageX, imageY, imageWidth, imageHeight, imageRadius);
         ctx.fill();
