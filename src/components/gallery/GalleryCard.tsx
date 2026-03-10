@@ -17,7 +17,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     const generate = async () => {
       if (!cardRef.current) return;
       try {
-        const dataUrl = await toPng(cardRef.current, { cacheBust: true, pixelRatio: 2 });
+        const dataUrl = await toPng(cardRef.current, { cacheBust: true, pixelRatio: 1.5 });
         setGeneratedImage(dataUrl);
       } catch (error) {
         console.error('Could not generate image', error);
