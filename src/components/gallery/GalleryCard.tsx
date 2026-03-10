@@ -11,7 +11,6 @@ interface GalleryCardProps {
 const GalleryCard = ({ palette }: GalleryCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [wechatPreviewUrl, setWechatPreviewUrl] = useState<string | null>(null);
 
   const downloadDataUrl = async (dataUrl: string, filename: string) => {
     const blob = await (await fetch(dataUrl)).blob();
@@ -34,8 +33,10 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
   const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
 
-  const openWeChatSaveSheet = async (dataUrl: string) => {
-    setWechatPreviewUrl(dataUrl);
+  const openImageAsStandalone = (dataUrl: string) => {
+    const newWindow = window.open(dataUrl);
+    if (newWindow) return;
+    window.location.href = dataUrl;
   };
 
   const openImageOnlyPreview = async (dataUrl: string) => {
@@ -223,7 +224,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     if (!generatedImage) return;
     try {
       if (isWeChat) {
-        await openWeChatSaveSheet(generatedImage);
+        openImageAsStandalone(generatedImage);
         return;
       }
 
@@ -252,7 +253,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     if (!generatedImage) return;
     try {
       if (isWeChat) {
-        await openWeChatSaveSheet(generatedImage);
+        openImageAsStandalone(generatedImage);
         return;
       }
       await downloadDataUrl(generatedImage, `color-muse-${Date.now()}.png`);
@@ -289,41 +290,6 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
           <Download className={`w-5 h-5 ${!generatedImage ? 'text-gray-300' : 'text-gray-600'}`} />
         </button>
       </div>
-
-      {wechatPreviewUrl ? (
-        <div className="fixed inset-0 bg-[#FBF9F6]/95 backdrop-blur-sm flex items-center justify-center z-50 p-6">
-          <button
-            type="button"
-            className="absolute inset-0 w-full h-full"
-            onClick={() => setWechatPreviewUrl(null)}
-            aria-label="关闭"
-          />
-          <div
-            className="max-w-sm w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="bg-white rounded-2xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] p-5">
-              <div className="text-gray-400 text-[12px] font-sans tracking-[0.25em] text-center mb-4">
-                长按图片保存到相册
-              </div>
-              <img
-                src={wechatPreviewUrl}
-                alt="Color Muse Export"
-                className="w-full h-auto rounded-2xl"
-              />
-            </div>
-            <button
-              type="button"
-              className="mt-4 w-full text-gray-400 hover:text-gray-600 transition-colors text-sm font-sans py-3 rounded-2xl border border-gray-200 bg-white"
-              onClick={() => {
-                setWechatPreviewUrl(null);
-              }}
-            >
-              关闭
-            </button>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 };
