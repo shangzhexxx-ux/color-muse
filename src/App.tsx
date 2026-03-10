@@ -12,21 +12,27 @@ const App: React.FC = () => {
     img.crossOrigin = "Anonymous";
     img.src = imageUrl;
     img.onload = () => {
-      // @ts-ignore
+      // @ts-expect-error colorthief 的类型定义与实际用法不一致（实际可 new）
       const colorThief = new ColorThief();
       const rawPalette = colorThief.getPalette(img, 5);
 
       // 将 RGB 转换为 HSL 并进行排序以实现“邻近色”渐变效果
+      type ColorHsl = { hex: string; h: number; s: number; l: number };
+
       const sortedColors = rawPalette
-        .map((rgb: number[]) => {
+        .map((rgb: number[]): ColorHsl => {
           const r = rgb[0] / 255;
           const g = rgb[1] / 255;
           const b = rgb[2] / 255;
-          const max = Math.max(r, g, b), min = Math.min(r, g, b);
-          let h = 0, s, l = (max + min) / 2;
+          const max = Math.max(r, g, b);
+          const min = Math.min(r, g, b);
+          let h = 0;
+          let s = 0;
+          const l = (max + min) / 2;
 
           if (max === min) {
-            h = s = 0;
+            h = 0;
+            s = 0;
           } else {
             const d = max - min;
             s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
@@ -42,14 +48,14 @@ const App: React.FC = () => {
             h, s, l
           };
         })
-        .sort((a: any, b: any) => {
+        .sort((a: ColorHsl, b: ColorHsl) => {
           // 优先按色相 (Hue) 排序，如果色相接近，则按亮度 (Lightness) 排序
           if (Math.abs(a.h - b.h) > 0.1) {
             return a.h - b.h;
           }
           return a.l - b.l;
         })
-        .map((c: any) => c.hex);
+        .map((c: ColorHsl) => c.hex);
 
       setPalette({
         id: "1",

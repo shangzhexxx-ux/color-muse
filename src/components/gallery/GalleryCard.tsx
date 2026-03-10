@@ -27,29 +27,56 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   useEffect(() => {
     const generate = async () => {
       if (!cardRef.current) return;
+      const exportRoot = document.createElement('div');
+      exportRoot.style.position = 'fixed';
+      exportRoot.style.left = '-10000px';
+      exportRoot.style.top = '0';
+      exportRoot.style.width = 'fit-content';
+      exportRoot.style.height = 'fit-content';
+      exportRoot.style.padding = '40px';
+      exportRoot.style.background = '#FBF9F6';
+      exportRoot.style.display = 'flex';
+      exportRoot.style.alignItems = 'center';
+      exportRoot.style.justifyContent = 'center';
+      exportRoot.style.pointerEvents = 'none';
+
+      const cardClone = cardRef.current.cloneNode(true) as HTMLDivElement;
+      cardClone.style.transform = 'scale(0.85)';
+      cardClone.style.transformOrigin = 'center';
+      exportRoot.appendChild(cardClone);
+
+      document.body.appendChild(exportRoot);
+
       try {
-        // @ts-ignore
-        const dataUrl = await toPng(cardRef.current, { 
-          cacheBust: true, 
-          pixelRatio: 4, // 提高到 4 倍以获得极致清晰度
-          backgroundColor: '#FBF9F6', // 使用与网页底色一致的颜色，消除圆角边缘瑕疵
+        const images = Array.from(exportRoot.querySelectorAll('img'));
+        await Promise.all(
+          images.map((img) => {
+            const anyImg = img as HTMLImageElement;
+            if (anyImg.complete) return Promise.resolve();
+            return new Promise<void>((resolve) => {
+              anyImg.onload = () => resolve();
+              anyImg.onerror = () => resolve();
+            });
+          })
+        );
+
+        const dataUrl = await (toPng as unknown as (node: HTMLElement, options: unknown) => Promise<string>)(exportRoot, {
+          cacheBust: true,
+          pixelRatio: 4,
+          backgroundColor: '#FBF9F6',
           fetchRequest: proxy,
-          style: {
-            padding: '40px', // 进一步增加内边距，确保长投影也能被完整捕获
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          },
-          // 排除掉所有按钮，防止意外捕获
-          filter: (node: any) => {
-            const isButton = node.tagName === 'BUTTON';
-            const isButtonIcon = node.tagName === 'svg' || (node.parentElement && node.parentElement.tagName === 'BUTTON');
+          filter: (node: HTMLElement) => {
+            const tagName = node.tagName.toUpperCase();
+            const isButton = tagName === 'BUTTON';
+            const isButtonIcon = tagName === 'SVG' || (node.parentElement?.tagName.toUpperCase() === 'BUTTON');
             return !isButton && !isButtonIcon;
-          }
+          },
         });
         setGeneratedImage(dataUrl);
       } catch (error) {
         console.error('Could not generate image', error);
+      } finally {
+        exportRoot.remove();
       }
     };
 
