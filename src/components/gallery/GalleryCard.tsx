@@ -16,10 +16,10 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     if (cardRef.current) {
       toPng(cardRef.current, { cacheBust: true, })
         .then((dataUrl) => {
-          const link = document.createElement('a');
-          link.download = `color-muse-${Date.now()}.png`;
-          link.href = dataUrl;
-          link.click();
+          const newWindow = window.open();
+          if (newWindow) {
+            newWindow.document.write(`<img src="${dataUrl}" alt="Color Muse Palette" />`);
+          }
         })
         .catch((err) => {
           console.log(err);
@@ -29,7 +29,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
   return (
     <div className="relative">
-      <div ref={cardRef} className="bg-white rounded-2xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] w-[400px]">
+      <div ref={cardRef} className="bg-white rounded-2xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] w-full max-w-md">
         <ImageCover imageUrl={palette.imageUrl} />
         <div className="flex justify-around p-6">
           {palette.colors.map((color) => (

@@ -76,7 +76,7 @@ const App: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className="w-[400px]">
+        <div className="w-full max-w-md px-4">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-sans font-black tracking-widest text-gray-800">COLOR MUSE</h1>
           </div>
