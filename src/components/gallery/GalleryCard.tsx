@@ -31,11 +31,20 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         // @ts-ignore
         const dataUrl = await toPng(cardRef.current, { 
           cacheBust: true, 
-          pixelRatio: 2.5, // 提高到 2.5 倍以获得超高清质量
-          backgroundColor: '#FFFFFF', // 确保背景是纯白
-          fetchRequest: proxy, // 使用代理解决跨域图片无法渲染的问题
+          pixelRatio: 4, // 提高到 4 倍以获得极致清晰度
+          backgroundColor: '#FBF9F6', // 使用与网页底色一致的颜色，消除圆角边缘瑕疵
+          fetchRequest: proxy,
           style: {
-            borderRadius: '1rem', // 确保图片中也保留圆角
+            padding: '40px', // 进一步增加内边距，确保长投影也能被完整捕获
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
+          // 排除掉所有按钮，防止意外捕获
+          filter: (node: any) => {
+            const isButton = node.tagName === 'BUTTON';
+            const isButtonIcon = node.tagName === 'svg' || (node.parentElement && node.parentElement.tagName === 'BUTTON');
+            return !isButton && !isButtonIcon;
           }
         });
         setGeneratedImage(dataUrl);
@@ -44,7 +53,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       }
     };
 
-    const timer = setTimeout(generate, 800); // 稍微增加延迟，确保图片完全加载
+    const timer = setTimeout(generate, 1000); // 增加等待时间确保渲染完全
     return () => clearTimeout(timer);
   }, [palette]);
 
