@@ -55,8 +55,6 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
           backgroundColor: '#FBF9F6',
           filter: (node: unknown) => {
             if (!(node instanceof Element)) return true;
-            if (node.hasAttribute('data-export-ignore')) return false;
-            if (node.closest('[data-export-ignore]')) return false;
             const tagName = node.tagName.toUpperCase();
             const isButton = tagName === 'BUTTON';
             const isButtonIcon = tagName === 'SVG' || node.parentElement?.tagName.toUpperCase() === 'BUTTON';
@@ -107,7 +105,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     <div className="relative">
       <div ref={cardRef} className="bg-white rounded-2xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] w-full max-w-sm">
         <ImageCover imageUrl={palette.imageUrl} />
-        <div className="flex justify-center items-center gap-x-5 pt-2 pb-5 px-3">
+        <div className="flex justify-center items-center gap-x-5 pt-2 pb-5 px-6">
           {palette.colors.map((color) => (
             <ColorDot key={color} color={color} />
           ))}
