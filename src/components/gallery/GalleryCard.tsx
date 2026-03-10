@@ -17,6 +17,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   const generatedImageRef = useRef<string | null>(null);
   const [weChatPreviewUrl, setWeChatPreviewUrl] = useState<string | null>(null);
   const [weChatTipVisible, setWeChatTipVisible] = useState(false);
+  const [weChatBlobUrl, setWeChatBlobUrl] = useState<string | null>(null);
 
   const downloadDataUrl = async (dataUrl: string, filename: string) => {
     const blob = await (await fetch(dataUrl)).blob();
@@ -75,6 +76,34 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   }, [weChatPreviewUrl]);
 
   useEffect(() => {
+    if (!isWeChat) return;
+    if (!generatedImage) return;
+
+    let cancelled = false;
+    const create = async () => {
+      try {
+        const blob = await (await fetch(generatedImage)).blob();
+        const url = URL.createObjectURL(blob);
+        if (cancelled) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        setWeChatBlobUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return url;
+        });
+      } catch {
+        // ignore
+      }
+    };
+
+    void create();
+    return () => {
+      cancelled = true;
+    };
+  }, [generatedImage, isWeChat]);
+
+  useEffect(() => {
     const drawRoundedRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => {
       const radius = Math.min(r, w / 2, h / 2);
       ctx.beginPath();
@@ -114,7 +143,6 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         const isWeChatLocal = /MicroMessenger/i.test(navigator.userAgent);
         const scale = targetScale ?? (isWeChatLocal || isMobile ? 2 : 3);
-        const bgColor = '#FBF9F6';
 
         let cardWidthCss = cardRef.current?.getBoundingClientRect().width ?? 0;
         if (cardWidthCss < 10) {
@@ -124,9 +152,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         }
         if (cardWidthCss < 200) cardWidthCss = 384;
         const cardWidth = Math.round(cardWidthCss * scale);
-        const cardShadowBlur = 40 * scale;
-        const cardShadowOffsetY = 20 * scale;
-        const outerPadding = Math.round((cardShadowBlur + cardShadowOffsetY) * 0.5 + 8 * scale);
+        const outerPadding = 0;
         const cardRadius = 16 * scale;
         const cardPaddingX = 32 * scale;
         const coverPaddingTop = 16 * scale;
@@ -165,21 +191,12 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         const ctx = canvas.getContext('2d');
         if (!ctx) return null;
 
-        ctx.fillStyle = bgColor;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
         const cardX = outerPadding;
         const cardY = outerPadding;
 
-        ctx.save();
-        ctx.shadowColor = 'rgba(0,0,0,0.08)';
-        ctx.shadowBlur = cardShadowBlur;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = cardShadowOffsetY;
         ctx.fillStyle = '#FFFFFF';
         drawRoundedRect(ctx, cardX, cardY, cardWidth, cardHeight, cardRadius);
         ctx.fill();
-        ctx.restore();
 
         let cursorY = cardY + coverPaddingTop;
 
@@ -193,16 +210,6 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
         const imageX = cardX + cardPaddingX;
         const imageY = cursorY;
-
-        ctx.save();
-        ctx.shadowColor = 'rgba(0,0,0,0.12)';
-        ctx.shadowBlur = 9 * scale;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 4 * scale;
-        ctx.fillStyle = '#FFFFFF';
-        drawRoundedRect(ctx, imageX, imageY, imageWidth, imageHeight, imageRadius);
-        ctx.fill();
-        ctx.restore();
 
         ctx.save();
         drawRoundedRect(ctx, imageX, imageY, imageWidth, imageHeight, imageRadius);
@@ -372,7 +379,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         <div className="fixed inset-0 z-50 bg-[#e9e9e9]">
           {weChatTipVisible ? (
             <div className="pointer-events-none absolute left-1/2 top-4 -translate-x-1/2 bg-white/90 border border-black/5 text-black/55 px-4 py-2 rounded-full text-[13px] font-sans tracking-[0.08em] whitespace-nowrap">
-              点击右上角 “···” 保存图片到相册
+              点击右上角 “...” 保存图片到相册
             </div>
           ) : null}
           <img
@@ -380,6 +387,9 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
             alt="Color Muse Export"
             className="w-screen h-screen object-contain"
             style={{ WebkitTouchCallout: 'default' }}
+            onClick={() => {
+              if (weChatBlobUrl) window.location.assign(weChatBlobUrl);
+            }}
           />
         </div>
       ) : null}
