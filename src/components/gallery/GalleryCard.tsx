@@ -9,6 +9,17 @@ interface GalleryCardProps {
   palette: ColorPalette;
 }
 
+const proxy = (url: string) => {
+  return fetch(url)
+    .then((response) => response.blob())
+    .then((blob) => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    }));
+}
+
 const GalleryCard = ({ palette }: GalleryCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -20,9 +31,11 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
     try {
       alert('步骤 1/5: 开始生成图片...');
+      // @ts-ignore
       const dataUrl = await toPng(cardRef.current, { 
         cacheBust: true, 
-        pixelRatio: 2, 
+        pixelRatio: 2,
+        fetchRequest: proxy,
       });
       alert('步骤 2/5: 图片已生成，正在转换为文件...');
 
