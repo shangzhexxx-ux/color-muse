@@ -20,27 +20,26 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         cacheBust: true, 
         pixelRatio: 2, 
       });
+      const blob = await (await fetch(dataUrl)).blob();
+      const imageFile = new File([blob], `color-muse-${Date.now()}.png`, { type: 'image/png' });
 
-      // 检测是否为移动设备
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-      if (isMobile) {
-        // 移动端：在新标签页打开，让用户长按保存
-        const newWindow = window.open();
-        if (newWindow) {
-          newWindow.document.write(`<style>body{margin:0; background:#eee;} img{max-width:100%; height:auto;}</style><img src="${dataUrl}" alt="Color Muse Palette" />`);
-        }
+      // 优先使用 Web Share API (主要针对移动端)
+      if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+        await navigator.share({
+          files: [imageFile],
+          title: 'Color Muse Palette',
+          text: 'A color palette from Color Muse',
+        });
       } else {
-        // 桌面端：创建虚拟链接并点击下载
+        // 降级方案：适用于桌面端或不支持分享的移动端浏览器
         const link = document.createElement('a');
         link.download = `color-muse-${Date.now()}.png`;
         link.href = dataUrl;
         link.click();
       }
-
     } catch (err) {
-      console.error('Oops, something went wrong!', err);
-      alert('图片生成失败，请稍后重试');
+      console.error('Download failed:', err);
+      alert('图片生成或下载失败，请稍后重试。');
     }
   };
 
