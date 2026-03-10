@@ -12,18 +12,31 @@ interface GalleryCardProps {
 const GalleryCard = ({ palette }: GalleryCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const handleSaveImage = () => {
-    if (cardRef.current) {
-      toPng(cardRef.current, { cacheBust: true, })
-        .then((dataUrl) => {
-          const newWindow = window.open();
-          if (newWindow) {
-            newWindow.document.write(`<img src="${dataUrl}" alt="Color Muse Palette" />`);
-          }
-        })
-        .catch((err) => {
-          console.log(err);
+  const handleSaveImage = async () => {
+    if (!cardRef.current) return;
+
+    try {
+      const dataUrl = await toPng(cardRef.current, { cacheBust: true });
+      const blob = await (await fetch(dataUrl)).blob();
+      const imageFile = new File([blob], `color-muse-${Date.now()}.png`, { type: 'image/png' });
+
+      // 检查是否支持 Web Share API 并且可以分享文件
+      if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+        await navigator.share({
+          files: [imageFile],
+          title: 'Color Muse Palette',
+          text: 'Check out this color palette I created!',
         });
+      } else {
+        // 降级方案：在新标签页中打开图片
+        const newWindow = window.open();
+        if (newWindow) {
+          newWindow.document.write(`<img src="${dataUrl}" alt="Color Muse Palette" />`);
+        }
+      }
+    } catch (err) {
+      console.error('Oops, something went wrong!', err);
+      // 可以在这里添加用户友好的错误提示
     }
   };
 
