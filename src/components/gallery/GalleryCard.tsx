@@ -42,7 +42,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     if (!newWindow) return null;
     try {
       newWindow.document.open();
-      newWindow.document.write('<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#ececec;color:#9CA3AF">生成中...</body></html>');
+      newWindow.document.write('<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#e9e9e9;color:#9CA3AF">生成中...</body></html>');
       newWindow.document.close();
     } catch {
       // ignore
@@ -65,8 +65,8 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Color Muse</title>
     <style>
-      html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #ececec; }
-      .wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #ececec; }
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #e9e9e9; }
+      .wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #e9e9e9; }
       img { width: 100vw; height: 100vh; object-fit: contain; display: block; -webkit-user-select: none; user-select: none; }
       .tip { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.06); color: rgba(0,0,0,0.55); padding: 10px 14px; border-radius: 999px; font: 13px system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; letter-spacing: 0.08em; white-space: nowrap; }
     </style>
@@ -75,7 +75,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     <div class="wrap">
       <img src="${dataUrl}" alt="Color Muse Export" />
     </div>
-    <div class="tip">点击右上角 “···” 分享/保存图片到相册</div>
+    <div class="tip">点击右上角 “···” 、保存图片到相册</div>
   </body>
 </html>`);
       newWindow.document.close();
@@ -317,6 +317,11 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
       if (isWeChat) {
         const newWindow = openBlankWindow();
+        try {
+          window.localStorage.setItem('cm_return_home', '1');
+        } catch {
+          // ignore
+        }
         await renderImageInWindow(newWindow, url);
         return;
       }
@@ -349,6 +354,11 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       if (!url) return;
 
       if (isWeChat) {
+        try {
+          window.localStorage.setItem('cm_return_home', '1');
+        } catch {
+          // ignore
+        }
         await renderImageInWindow(newWindow, url);
         return;
       }
@@ -371,20 +381,32 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       </div>
       
       <div className="absolute -top-5 -right-5 flex flex-col gap-2">
-        <button 
-          onClick={handleShare}
-          disabled={isGenerating}
-          className="bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
-        >
-          <Share2 className={`w-5 h-5 ${isGenerating || !generatedImage ? 'text-gray-300' : 'text-gray-600'}`} />
-        </button>
-        <button 
-          onClick={handleDownload}
-          disabled={isGenerating}
-          className="bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
-        >
-          <Download className={`w-5 h-5 ${isGenerating || !generatedImage ? 'text-gray-300' : 'text-gray-600'}`} />
-        </button>
+        {isWeChat ? (
+          <button 
+            onClick={handleDownload}
+            disabled={isGenerating}
+            className="bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+          >
+            <Download className={`w-5 h-5 ${isGenerating || !generatedImage ? 'text-gray-300' : 'text-gray-600'}`} />
+          </button>
+        ) : (
+          <>
+            <button 
+              onClick={handleShare}
+              disabled={isGenerating}
+              className="bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+            >
+              <Share2 className={`w-5 h-5 ${isGenerating || !generatedImage ? 'text-gray-300' : 'text-gray-600'}`} />
+            </button>
+            <button 
+              onClick={handleDownload}
+              disabled={isGenerating}
+              className="bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+            >
+              <Download className={`w-5 h-5 ${isGenerating || !generatedImage ? 'text-gray-300' : 'text-gray-600'}`} />
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
