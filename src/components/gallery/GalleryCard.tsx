@@ -48,16 +48,23 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     return newWindow;
   };
 
-  const navigateWindowToDataUrl = (newWindow: Window | null, dataUrl: string) => {
-    if (newWindow) {
+  const renderImageInWindow = async (newWindow: Window | null, dataUrl: string) => {
+    if (!newWindow) {
+      window.location.href = dataUrl;
+      return;
+    }
+
+    try {
+      newWindow.document.open();
+      newWindow.document.write(`<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" /></head><body style="margin:0;background:#000"><img src="${dataUrl}" style="width:100vw;height:100vh;object-fit:contain;display:block" /></body></html>`);
+      newWindow.document.close();
+    } catch {
       try {
         newWindow.location.replace(dataUrl);
-        return;
       } catch {
-        // ignore
+        window.location.href = dataUrl;
       }
     }
-    window.location.href = dataUrl;
   };
 
   const openImageOnlyPreview = async (dataUrl: string) => {
@@ -266,7 +273,15 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
   const ensureGeneratedImage = async () => {
     if (generatedImage) return generatedImage;
-    return generateRef.current();
+
+    for (let i = 0; i < 20; i += 1) {
+      const result = await generateRef.current();
+      if (result) return result;
+      if (generatedImage) return generatedImage;
+      await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    }
+
+    return generatedImage;
   };
 
   const handleShare = async () => {
@@ -276,7 +291,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
       if (isWeChat) {
         const newWindow = openBlankWindow();
-        navigateWindowToDataUrl(newWindow, url);
+        await renderImageInWindow(newWindow, url);
         return;
       }
 
@@ -308,7 +323,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       if (!url) return;
 
       if (isWeChat) {
-        navigateWindowToDataUrl(newWindow, url);
+        await renderImageInWindow(newWindow, url);
         return;
       }
       await downloadDataUrl(url, `color-muse-${Date.now()}.png`);
