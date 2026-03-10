@@ -17,7 +17,21 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     if (!newWindow) return;
     newWindow.document.open();
     newWindow.document.write(
-      `<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="${dataUrl}" style="max-width:100%;height:auto" /></body></html>`
+      `<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta charset="utf-8" />
+    <title>Color Muse</title>
+    <style>
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; }
+      img { width: 100vw; height: 100vh; object-fit: contain; display: block; }
+    </style>
+  </head>
+  <body>
+    <img src="${dataUrl}" alt="Color Muse Export" />
+  </body>
+</html>`
     );
     newWindow.document.close();
   };
