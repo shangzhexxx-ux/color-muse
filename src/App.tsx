@@ -72,7 +72,7 @@ const App: React.FC = () => {
   return (
     <div className="bg-[#FBF9F6] min-h-screen flex items-center justify-center p-8">
       {palette ? (
-        <div className="w-full max-w-sm">
+        <div className="w-full max-w-[422px]">
           <div className="flex flex-col items-center gap-8">
             <GalleryCard palette={palette} />
             <button 
@@ -84,7 +84,7 @@ const App: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="w-full max-w-sm px-4">
+        <div className="w-full max-w-[422px] px-4">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-sans font-black tracking-widest text-gray-800">COLOR MUSE</h1>
           </div>

@@ -67,7 +67,8 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         const scale = 3;
         const bgColor = '#FBF9F6';
 
-        const cardWidth = 384 * scale;
+        const cardWidthCss = cardRef.current?.getBoundingClientRect().width ?? 384;
+        const cardWidth = Math.round(cardWidthCss * scale);
         const cardShadowBlur = 40 * scale;
         const cardShadowOffsetY = 20 * scale;
         const outerPadding = cardShadowBlur + cardShadowOffsetY + 8 * scale;
@@ -77,7 +78,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         const coverPaddingBottom = 16 * scale;
         const headerFontSize = 11 * scale;
         const headerGap = 16 * scale;
-        const imageRadius = 12 * scale;
+        const imageRadius = 8 * scale;
 
         const paletteTopPadding = 2 * scale;
         const paletteBottomPadding = 20 * scale;
