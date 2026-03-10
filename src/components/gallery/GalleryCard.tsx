@@ -48,7 +48,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     <div className="relative">
       <div ref={cardRef} className="bg-white rounded-2xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] w-full max-w-sm">
         <ImageCover imageUrl={palette.imageUrl} />
-        <div className="flex justify-center items-center gap-x-6 p-3">
+        <div className="flex justify-center items-center gap-x-3 pt-3 pb-5 px-3">
           {palette.colors.map((color) => (
             <ColorDot key={color} color={color} />
           ))}
