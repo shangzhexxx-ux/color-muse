@@ -39,20 +39,6 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
   const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
 
-  const dataUrlToBlob = (dataUrl: string) => {
-    const commaIndex = dataUrl.indexOf(',');
-    const header = commaIndex >= 0 ? dataUrl.slice(0, commaIndex) : '';
-    const base64 = commaIndex >= 0 ? dataUrl.slice(commaIndex + 1) : dataUrl;
-    const mimeMatch = header.match(/data:([^;]+);base64/i);
-    const mime = mimeMatch?.[1] ?? 'application/octet-stream';
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i += 1) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    return new Blob([bytes], { type: mime });
-  };
-
   const openImageOnlyPreview = async (dataUrl: string) => {
     const newWindow = window.open('about:blank');
     if (!newWindow) {
@@ -287,12 +273,15 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       if (!url) return;
 
       if (isWeChat) {
+        const dataUrl = generatedImageRef.current;
+        if (!dataUrl) {
+          setWeChatToastText('图片生成中，请稍后再试');
+          setWeChatToastVisible(true);
+          return;
+        }
         setWeChatToastText('点击右上角 “...” 保存图片到相册');
         setWeChatToastVisible(true);
-        const dataUrl = generatedImageRef.current;
-        if (!dataUrl) return;
-        const blobUrl = URL.createObjectURL(dataUrlToBlob(dataUrl));
-        window.location.assign(blobUrl);
+        window.location.assign(dataUrl);
         return;
       }
 
@@ -331,8 +320,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         }
         setWeChatToastText('点击右上角 “...” 保存图片到相册');
         setWeChatToastVisible(true);
-        const blobUrl = URL.createObjectURL(dataUrlToBlob(dataUrl));
-        window.location.assign(blobUrl);
+        window.location.assign(dataUrl);
         return;
       }
       await downloadDataUrl(url, `color-muse-${Date.now()}.png`);
