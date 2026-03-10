@@ -28,11 +28,11 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
           text: 'Check out this color palette I created!',
         });
       } else {
-        // 降级方案：在新标签页中打开图片
-        const newWindow = window.open();
-        if (newWindow) {
-          newWindow.document.write(`<img src="${dataUrl}" alt="Color Muse Palette" />`);
-        }
+        // 降级方案：创建虚拟链接并点击，适用于桌面端
+        const link = document.createElement('a');
+        link.download = `color-muse-${Date.now()}.png`;
+        link.href = dataUrl;
+        link.click();
       }
     } catch (err) {
       console.error('Oops, something went wrong!', err);
