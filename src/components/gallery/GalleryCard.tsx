@@ -15,6 +15,8 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   const generateRef = useRef<() => Promise<string | null>>(async () => null);
   const isGeneratingRef = useRef(false);
   const generatedImageRef = useRef<string | null>(null);
+  const [weChatOverlayUrl, setWeChatOverlayUrl] = useState<string | null>(null);
+  const [weChatTipVisible, setWeChatTipVisible] = useState(false);
 
   const downloadDataUrl = async (dataUrl: string, filename: string) => {
     const blob = await (await fetch(dataUrl)).blob();
@@ -53,6 +55,26 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       newWindow.location.replace(dataUrl);
     }
   };
+
+  useEffect(() => {
+    if (!isWeChat) return;
+    const onPopState = () => {
+      setWeChatOverlayUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+      setWeChatTipVisible(false);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [isWeChat]);
+
+  useEffect(() => {
+    if (!weChatOverlayUrl) return;
+    setWeChatTipVisible(true);
+    const timer = window.setTimeout(() => setWeChatTipVisible(false), 1800);
+    return () => window.clearTimeout(timer);
+  }, [weChatOverlayUrl]);
 
   useEffect(() => {
     const drawRoundedRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => {
@@ -265,15 +287,13 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       if (!url) return;
 
       if (isWeChat) {
-        const newWindow = window.open('about:blank');
         const blob = await (await fetch(url)).blob();
         const blobUrl = URL.createObjectURL(blob);
-        if (newWindow) {
-          newWindow.location.replace(blobUrl);
-        } else {
-          window.location.href = blobUrl;
-        }
-        window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+        setWeChatOverlayUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return blobUrl;
+        });
+        window.history.pushState({ cmWeChatPreview: true }, '', '#preview');
         return;
       }
 
@@ -304,15 +324,13 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       if (!url) return;
 
       if (isWeChat) {
-        const newWindow = window.open('about:blank');
         const blob = await (await fetch(url)).blob();
         const blobUrl = URL.createObjectURL(blob);
-        if (newWindow) {
-          newWindow.location.replace(blobUrl);
-        } else {
-          window.location.href = blobUrl;
-        }
-        window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+        setWeChatOverlayUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return blobUrl;
+        });
+        window.history.pushState({ cmWeChatPreview: true }, '', '#preview');
         return;
       }
       await downloadDataUrl(url, `color-muse-${Date.now()}.png`);
@@ -362,6 +380,21 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         )}
       </div>
 
+      {isWeChat && weChatOverlayUrl ? (
+        <div className="fixed inset-0 z-50 bg-[#e9e9e9]">
+          {weChatTipVisible ? (
+            <div className="pointer-events-none absolute left-1/2 top-4 -translate-x-1/2 bg-white/90 border border-black/5 text-black/55 px-4 py-2 rounded-full text-[13px] font-sans tracking-[0.08em] whitespace-nowrap">
+              点击右上角 “...” 保存图片到相册
+            </div>
+          ) : null}
+          <img
+            src={weChatOverlayUrl}
+            alt="Color Muse Export"
+            className="w-screen h-screen object-contain"
+            style={{ WebkitTouchCallout: 'default' }}
+          />
+        </div>
+      ) : null}
     </div>
   );
 };
