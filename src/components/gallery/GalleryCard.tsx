@@ -12,28 +12,21 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
 
-  const openImageOnlyPreview = (dataUrl: string) => {
-    const newWindow = window.open();
-    if (!newWindow) return;
-    newWindow.document.open();
-    newWindow.document.write(
-      `<!doctype html>
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta charset="utf-8" />
-    <title>Color Muse</title>
-    <style>
-      html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; }
-      img { width: 100vw; height: 100vh; object-fit: contain; display: block; }
-    </style>
-  </head>
-  <body>
-    <img src="${dataUrl}" alt="Color Muse Export" />
-  </body>
-</html>`
-    );
-    newWindow.document.close();
+  const openImageOnlyPreview = async (dataUrl: string) => {
+    const newWindow = window.open('about:blank');
+    if (!newWindow) {
+      window.location.href = dataUrl;
+      return;
+    }
+
+    try {
+      const blob = await (await fetch(dataUrl)).blob();
+      const blobUrl = URL.createObjectURL(blob);
+      newWindow.location.replace(blobUrl);
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch {
+      newWindow.location.replace(dataUrl);
+    }
   };
 
   useEffect(() => {
@@ -202,7 +195,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     try {
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) {
-        openImageOnlyPreview(generatedImage);
+        await openImageOnlyPreview(generatedImage);
         return;
       }
 
@@ -212,7 +205,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
         await navigator.share({ files: [imageFile] });
       } else {
-        openImageOnlyPreview(generatedImage);
+        await openImageOnlyPreview(generatedImage);
       }
     } catch (err) {
       console.error('Share failed:', err);
@@ -223,7 +216,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     if (!generatedImage) return;
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) {
-      openImageOnlyPreview(generatedImage);
+      void openImageOnlyPreview(generatedImage);
       return;
     }
     const link = document.createElement('a');
