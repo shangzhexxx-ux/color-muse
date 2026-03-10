@@ -359,14 +359,14 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
       {isWeChat && weChatPreviewUrl ? (
         <div className="fixed inset-0 z-50 bg-[#e9e9e9]">
-          <div className="absolute left-1/2 top-4 -translate-x-1/2 bg-white/90 border border-black/5 text-black/55 px-4 py-2 rounded-full text-[13px] font-sans tracking-[0.08em] whitespace-nowrap">
+          <div className="pointer-events-none absolute left-1/2 top-4 -translate-x-1/2 bg-white/90 border border-black/5 text-black/55 px-4 py-2 rounded-full text-[13px] font-sans tracking-[0.08em] whitespace-nowrap">
             点击右上角 “···” 保存图片到相册
           </div>
           <img
             src={weChatPreviewUrl}
             alt="Color Muse Export"
-            className="w-screen h-screen object-contain select-none"
-            draggable={false}
+            className="w-screen h-screen object-contain"
+            style={{ WebkitTouchCallout: 'default' }}
           />
         </div>
       ) : null}
