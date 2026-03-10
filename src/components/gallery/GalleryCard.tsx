@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { ColorPalette } from "../../types";
+import ColorDot from "../shared/ColorDot";
+import ImageCover from "./ImageCover";
 import { Download, Share2 } from 'lucide-react';
 
 interface GalleryCardProps {
@@ -7,6 +9,7 @@ interface GalleryCardProps {
 }
 
 const GalleryCard = ({ palette }: GalleryCardProps) => {
+  const cardRef = useRef<HTMLDivElement>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
 
   const openImageOnlyPreview = async (dataUrl: string) => {
@@ -65,7 +68,9 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         const bgColor = '#FBF9F6';
 
         const cardWidth = 384 * scale;
-        const outerPadding = 40 * scale;
+        const cardShadowBlur = 40 * scale;
+        const cardShadowOffsetY = 20 * scale;
+        const outerPadding = cardShadowBlur + cardShadowOffsetY + 8 * scale;
         const cardRadius = 16 * scale;
         const cardPaddingX = 32 * scale;
         const coverPaddingTop = 16 * scale;
@@ -112,9 +117,9 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
         ctx.save();
         ctx.shadowColor = 'rgba(0,0,0,0.08)';
-        ctx.shadowBlur = 40 * scale;
+        ctx.shadowBlur = cardShadowBlur;
         ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 20 * scale;
+        ctx.shadowOffsetY = cardShadowOffsetY;
         ctx.fillStyle = '#FFFFFF';
         drawRoundedRect(ctx, cardX, cardY, cardWidth, cardHeight, cardRadius);
         ctx.fill();
@@ -223,14 +228,15 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   };
 
   return (
-    <div className="relative w-full max-w-sm">
-      {generatedImage ? (
-        <img src={generatedImage} alt="Color Muse Export" className="w-full h-auto block" />
-      ) : (
-        <div className="bg-white rounded-2xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] w-full h-[560px] flex items-center justify-center text-gray-300 font-sans tracking-widest">
-          生成中
+    <div className="relative">
+      <div ref={cardRef} className="bg-white rounded-2xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] w-full max-w-sm">
+        <ImageCover imageUrl={palette.imageUrl} />
+        <div className="flex justify-center items-center gap-x-5 pt-[2px] pb-5 px-6">
+          {palette.colors.map((color) => (
+            <ColorDot key={color} color={color} />
+          ))}
         </div>
-      )}
+      </div>
       
       <div className="absolute -top-5 -right-5 flex flex-col gap-2">
         <button 
