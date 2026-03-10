@@ -11,6 +11,7 @@ interface GalleryCardProps {
 const GalleryCard = ({ palette }: GalleryCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [wechatPreviewUrl, setWechatPreviewUrl] = useState<string | null>(null);
 
   const downloadDataUrl = async (dataUrl: string, filename: string) => {
     const blob = await (await fetch(dataUrl)).blob();
@@ -28,6 +29,22 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     } catch {
       window.location.href = blobUrl;
       window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    }
+  };
+
+  const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+
+  const openWeChatSaveSheet = async (dataUrl: string) => {
+    if (wechatPreviewUrl) {
+      URL.revokeObjectURL(wechatPreviewUrl);
+      setWechatPreviewUrl(null);
+    }
+    try {
+      const blob = await (await fetch(dataUrl)).blob();
+      const blobUrl = URL.createObjectURL(blob);
+      setWechatPreviewUrl(blobUrl);
+    } catch {
+      setWechatPreviewUrl(dataUrl);
     }
   };
 
@@ -215,6 +232,11 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   const handleShare = async () => {
     if (!generatedImage) return;
     try {
+      if (isWeChat) {
+        await openWeChatSaveSheet(generatedImage);
+        return;
+      }
+
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       const blob = await (await fetch(generatedImage)).blob();
       const imageFile = new File([blob], `color-muse-${Date.now()}.png`, { type: 'image/png' });
@@ -239,6 +261,10 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   const handleDownload = async () => {
     if (!generatedImage) return;
     try {
+      if (isWeChat) {
+        await openWeChatSaveSheet(generatedImage);
+        return;
+      }
       await downloadDataUrl(generatedImage, `color-muse-${Date.now()}.png`);
     } catch (err) {
       console.error('Download failed:', err);
@@ -273,6 +299,40 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
           <Download className={`w-5 h-5 ${!generatedImage ? 'text-gray-300' : 'text-gray-600'}`} />
         </button>
       </div>
+
+      {wechatPreviewUrl ? (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-6"
+          onClick={() => {
+            if (wechatPreviewUrl.startsWith('blob:')) URL.revokeObjectURL(wechatPreviewUrl);
+            setWechatPreviewUrl(null);
+          }}
+        >
+          <div
+            className="max-w-[92vw] w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-white text-sm font-sans text-center mb-4">
+              长按图片保存到相册
+            </div>
+            <img
+              src={wechatPreviewUrl}
+              alt="Color Muse Export"
+              className="w-full h-auto rounded-lg"
+            />
+            <button
+              type="button"
+              className="mt-4 w-full bg-white/10 text-white text-sm font-sans py-3 rounded-lg"
+              onClick={() => {
+                if (wechatPreviewUrl.startsWith('blob:')) URL.revokeObjectURL(wechatPreviewUrl);
+                setWechatPreviewUrl(null);
+              }}
+            >
+              关闭
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };
