@@ -18,18 +18,29 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     try {
       const dataUrl = await toPng(cardRef.current, { 
         cacheBust: true, 
-        pixelRatio: 2, // 提高图片分辨率，使其在高清屏幕上更清晰
+        pixelRatio: 2, 
       });
-      
-      // 在新标签页打开图片，这是最可靠的跨平台方案
-      const newWindow = window.open();
-      if (newWindow) {
-        newWindow.document.write(`<style>body{margin:0; background:#eee;} img{max-width:100%; height:auto;}</style><img src="${dataUrl}" alt="Color Muse Palette" />`);
+
+      // 检测是否为移动设备
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+      if (isMobile) {
+        // 移动端：在新标签页打开，让用户长按保存
+        const newWindow = window.open();
+        if (newWindow) {
+          newWindow.document.write(`<style>body{margin:0; background:#eee;} img{max-width:100%; height:auto;}</style><img src="${dataUrl}" alt="Color Muse Palette" />`);
+        }
+      } else {
+        // 桌面端：创建虚拟链接并点击下载
+        const link = document.createElement('a');
+        link.download = `color-muse-${Date.now()}.png`;
+        link.href = dataUrl;
+        link.click();
       }
 
     } catch (err) {
       console.error('Oops, something went wrong!', err);
-      // 可以在这里添加用户友好的错误提示，例如 alert('图片生成失败，请稍后重试');
+      alert('图片生成失败，请稍后重试');
     }
   };
 
