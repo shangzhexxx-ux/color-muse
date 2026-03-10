@@ -16,27 +16,20 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     if (!cardRef.current) return;
 
     try {
-      const dataUrl = await toPng(cardRef.current, { cacheBust: true });
-      const blob = await (await fetch(dataUrl)).blob();
-      const imageFile = new File([blob], `color-muse-${Date.now()}.png`, { type: 'image/png' });
-
-      // 检查是否支持 Web Share API 并且可以分享文件
-      if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
-        await navigator.share({
-          files: [imageFile],
-          title: 'Color Muse Palette',
-          text: 'Check out this color palette I created!',
-        });
-      } else {
-        // 降级方案：创建虚拟链接并点击，适用于桌面端
-        const link = document.createElement('a');
-        link.download = `color-muse-${Date.now()}.png`;
-        link.href = dataUrl;
-        link.click();
+      const dataUrl = await toPng(cardRef.current, { 
+        cacheBust: true, 
+        pixelRatio: 2, // 提高图片分辨率，使其在高清屏幕上更清晰
+      });
+      
+      // 在新标签页打开图片，这是最可靠的跨平台方案
+      const newWindow = window.open();
+      if (newWindow) {
+        newWindow.document.write(`<style>body{margin:0; background:#eee;} img{max-width:100%; height:auto;}</style><img src="${dataUrl}" alt="Color Muse Palette" />`);
       }
+
     } catch (err) {
       console.error('Oops, something went wrong!', err);
-      // 可以在这里添加用户友好的错误提示
+      // 可以在这里添加用户友好的错误提示，例如 alert('图片生成失败，请稍后重试');
     }
   };
 

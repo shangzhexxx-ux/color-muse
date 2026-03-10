@@ -66,14 +66,16 @@ const App: React.FC = () => {
   return (
     <div className="bg-[#FBF9F6] min-h-screen flex items-center justify-center p-4">
       {palette ? (
-        <div className="flex flex-col items-center gap-8">
-          <GalleryCard palette={palette} />
-          <button 
-            onClick={() => setPalette(null)}
-            className="text-gray-400 hover:text-gray-600 transition-colors text-sm font-sans"
-          >
-            ← 上传新图片
-          </button>
+        <div className="w-full max-w-md">
+          <div className="flex flex-col items-center gap-8">
+            <GalleryCard palette={palette} />
+            <button 
+              onClick={() => setPalette(null)}
+              className="text-gray-400 hover:text-gray-600 transition-colors text-sm font-sans"
+            >
+              ← 上传新图片
+            </button>
+          </div>
         </div>
       ) : (
         <div className="w-full max-w-md px-4">
