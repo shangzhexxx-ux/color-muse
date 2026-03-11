@@ -159,7 +159,8 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       try {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         const isWeChatLocal = /MicroMessenger/i.test(navigator.userAgent);
-        const scale = targetScale ?? (isWeChatLocal || isMobile ? 2 : 3);
+        const defaultScale = isWeChatLocal || isMobile ? 3 : 4;
+        const scale = targetScale ?? defaultScale;
         const bgColor = '#FBF9F6';
 
         let cardWidthCss = cardRef.current?.getBoundingClientRect().width ?? 0;

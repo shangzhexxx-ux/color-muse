@@ -52,8 +52,8 @@ const Uploader: React.FC<UploaderProps> = ({ onImageUpload }) => {
           <Upload className="w-6 h-6 text-gray-400 group-hover:text-gray-600" />
         </div>
         <div className="text-center">
-          <p className="text-gray-800 font-sans font-bold text-lg mb-1">开始捕捉灵感</p>
-          <p className="text-gray-400 text-sm font-sans">拖拽图片或点击上传</p>
+          <p className="text-gray-800 font-sans font-bold text-lg mb-1">开始捕捉色彩灵感</p>
+          <p className="text-gray-400 text-sm font-sans">拖拽图片或者点击上传生成你的专属色卡</p>
         </div>
       </label>
     </div>
