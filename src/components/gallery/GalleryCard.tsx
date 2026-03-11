@@ -40,6 +40,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   };
 
   const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+  const isWeChatMobile = isWeChat && ((window.matchMedia?.('(pointer: coarse)')?.matches ?? false) || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent));
 
   const dataUrlToPngBytes = (dataUrl: string) => {
     const commaIndex = dataUrl.indexOf(',');
@@ -77,10 +78,11 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
   useEffect(() => {
     if (!weChatOverlayUrl) return;
+    if (!isWeChatMobile) return;
     setWeChatTipVisible(true);
     const t = window.setTimeout(() => setWeChatTipVisible(false), 3000);
     return () => window.clearTimeout(t);
-  }, [weChatOverlayUrl]);
+  }, [weChatOverlayUrl, isWeChatMobile]);
 
   useEffect(() => {
     const onPopState = () => {
