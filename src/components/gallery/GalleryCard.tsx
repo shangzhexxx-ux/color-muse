@@ -39,6 +39,17 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
   const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
 
+  const dataUrlToPngBytes = (dataUrl: string) => {
+    const commaIndex = dataUrl.indexOf(',');
+    const base64 = commaIndex >= 0 ? dataUrl.slice(commaIndex + 1) : dataUrl;
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+  };
+
   const openImageOnlyPreview = async (dataUrl: string) => {
     const newWindow = window.open('about:blank');
     if (!newWindow) {
@@ -61,6 +72,35 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     const timer = window.setTimeout(() => setWeChatToastVisible(false), 1800);
     return () => window.clearTimeout(timer);
   }, [weChatToastVisible]);
+
+  useEffect(() => {
+    if (!isWeChat) return;
+    if (!generatedImage) return;
+    if (!('serviceWorker' in navigator)) return;
+
+    const send = async () => {
+      try {
+        const bytes = dataUrlToPngBytes(generatedImage);
+        const reg = await navigator.serviceWorker.ready;
+        const sw = reg.active ?? navigator.serviceWorker.controller;
+        if (!sw) return;
+
+        const channel = new MessageChannel();
+        await new Promise<void>((resolve) => {
+          channel.port1.onmessage = () => resolve();
+          sw.postMessage(
+            { type: 'SET_EXPORT', buffer: bytes.buffer, contentType: 'image/png' },
+            [channel.port2, bytes.buffer]
+          );
+        });
+      } catch {
+        // ignore
+      }
+    };
+
+    void send();
+    return () => {};
+  }, [generatedImage, isWeChat]);
 
   useEffect(() => {
     const drawRoundedRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => {
@@ -308,21 +348,21 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
   const handleDownload = async () => {
     try {
-      const url = await ensureGeneratedImage();
-      if (!url) return;
-
       if (isWeChat) {
-        const dataUrl = generatedImageRef.current;
-        if (!dataUrl) {
+        if (!generatedImageRef.current) {
           setWeChatToastText('图片生成中，请稍后再点下载');
           setWeChatToastVisible(true);
+          void generateRef.current();
           return;
         }
         setWeChatToastText('点击右上角 “...” 保存图片到相册');
         setWeChatToastVisible(true);
-        window.location.assign(dataUrl);
+        window.location.assign(`/__cm_export.png?t=${Date.now()}`);
         return;
       }
+
+      const url = await ensureGeneratedImage();
+      if (!url) return;
       await downloadDataUrl(url, `color-muse-${Date.now()}.png`);
     } catch (err) {
       console.error('Download failed:', err);
