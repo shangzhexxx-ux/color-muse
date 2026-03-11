@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import GalleryCard from "./components/gallery/GalleryCard";
 import Uploader from "./components/shared/Uploader";
 import { ColorPalette } from "./types";
@@ -6,6 +6,52 @@ import ColorThief from 'colorthief';
 
 const App: React.FC = () => {
   const [palette, setPalette] = useState<ColorPalette | null>(null);
+  const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+  const historyInitRef = useRef(false);
+
+  useEffect(() => {
+    if (!isWeChat) return;
+    if (historyInitRef.current) return;
+    historyInitRef.current = true;
+
+    try {
+      window.history.replaceState({ cmHome: true }, '', '#home');
+    } catch {
+      // ignore
+    }
+
+    const onPopState = (e: PopStateEvent) => {
+      const state = (e.state ?? {}) as { cmHome?: boolean };
+      if (state.cmHome) setPalette(null);
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [isWeChat]);
+
+  useEffect(() => {
+    if (!isWeChat) return;
+    const state = (window.history.state ?? {}) as { cmHome?: boolean; cmResult?: boolean };
+
+    if (palette) {
+      if (!state.cmResult) {
+        try {
+          window.history.pushState({ cmResult: true }, '', '#result');
+        } catch {
+          // ignore
+        }
+      }
+      return;
+    }
+
+    if (!state.cmHome) {
+      try {
+        window.history.replaceState({ cmHome: true }, '', '#home');
+      } catch {
+        // ignore
+      }
+    }
+  }, [isWeChat, palette]);
 
   const handleImageUpload = (imageUrl: string) => {
     const img = new Image();
