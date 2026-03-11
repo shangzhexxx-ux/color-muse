@@ -8,6 +8,7 @@ const App: React.FC = () => {
   const [palette, setPalette] = useState<ColorPalette | null>(null);
   const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
   const historyInitRef = useRef(false);
+  const [wxDomainTip, setWxDomainTip] = useState(false);
 
   useEffect(() => {
     if (!isWeChat) return;
@@ -52,6 +53,16 @@ const App: React.FC = () => {
       }
     }
   }, [isWeChat, palette]);
+
+  useEffect(() => {
+    if (!isWeChat) return;
+    const isTcloudDomain = typeof location !== 'undefined' && /\.tcloudbaseapp\.com$/.test(location.hostname);
+    if (isTcloudDomain) {
+      setWxDomainTip(true);
+      const t = window.setTimeout(() => setWxDomainTip(false), 4000);
+      return () => window.clearTimeout(t);
+    }
+  }, [isWeChat]);
 
   const handleImageUpload = (imageUrl: string) => {
     const img = new Image();
@@ -117,6 +128,11 @@ const App: React.FC = () => {
 
   return (
     <div className="bg-[#FBF9F6] min-h-screen flex items-center justify-center p-8">
+      {wxDomainTip ? (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-white/90 border border-black/5 text-black/60 px-4 py-2 rounded-full text-[13px] font-sans tracking-[0.04em] shadow">
+          若看到“继续访问”，请点继续；建议右上角在浏览器打开
+        </div>
+      ) : null}
       {palette ? (
         <div className="w-full max-w-[422px]">
           <div className="flex flex-col items-center gap-8">
