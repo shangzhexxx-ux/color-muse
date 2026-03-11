@@ -17,6 +17,8 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   const generatedImageRef = useRef<string | null>(null);
   const [weChatToastVisible, setWeChatToastVisible] = useState(false);
   const [weChatToastText, setWeChatToastText] = useState('');
+  const [weChatOverlayUrl, setWeChatOverlayUrl] = useState<string | null>(null);
+  const [weChatTipVisible, setWeChatTipVisible] = useState(false);
 
   const downloadDataUrl = async (dataUrl: string, filename: string) => {
     const blob = await (await fetch(dataUrl)).blob();
@@ -72,6 +74,22 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
     const timer = window.setTimeout(() => setWeChatToastVisible(false), 1800);
     return () => window.clearTimeout(timer);
   }, [weChatToastVisible]);
+
+  useEffect(() => {
+    if (!weChatOverlayUrl) return;
+    setWeChatTipVisible(true);
+    const t = window.setTimeout(() => setWeChatTipVisible(false), 1800);
+    return () => window.clearTimeout(t);
+  }, [weChatOverlayUrl]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      setWeChatOverlayUrl(null);
+      setWeChatTipVisible(false);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   useEffect(() => {
     if (!isWeChat) return;
@@ -349,15 +367,14 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   const handleDownload = async () => {
     try {
       if (isWeChat) {
-        if (!generatedImageRef.current) {
+        const dataUrl = generatedImageRef.current ?? (await ensureGeneratedImage());
+        if (!dataUrl) {
           setWeChatToastText('图片生成中，请稍后再点下载');
           setWeChatToastVisible(true);
-          void generateRef.current();
           return;
         }
-        setWeChatToastText('点击右上角 “...” 保存图片到相册');
-        setWeChatToastVisible(true);
-        window.location.assign(`/__cm_export.png?t=${Date.now()}`);
+        setWeChatOverlayUrl(dataUrl);
+        window.history.pushState({ cmWeChatPreview: true }, '', '#preview');
         return;
       }
 
@@ -413,6 +430,33 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       {isWeChat && weChatToastVisible ? (
         <div className="pointer-events-none fixed left-1/2 top-4 -translate-x-1/2 z-50 bg-white/90 border border-black/5 text-black/55 px-4 py-2 rounded-full text-[13px] font-sans tracking-[0.08em] whitespace-nowrap">
           {weChatToastText}
+        </div>
+      ) : null}
+
+      {isWeChat && weChatOverlayUrl ? (
+        <div
+          className="fixed inset-0 z-50 bg-[#e9e9e9]"
+          onClick={() => {
+            setWeChatOverlayUrl(null);
+            setWeChatTipVisible(false);
+            if (window.location.hash === '#preview') {
+              history.back();
+            }
+          }}
+        >
+          {weChatTipVisible ? (
+            <div className="pointer-events-none absolute left-1/2 top-4 -translate-x-1/2 bg-white/90 border border-black/5 text-black/55 px-4 py-2 rounded-full text-[13px] font-sans tracking-[0.08em] whitespace-nowrap">
+              长按图片保存到相册
+            </div>
+          ) : null}
+          <img
+            src={weChatOverlayUrl}
+            alt="Color Muse Export"
+            className="w-screen h-screen object-contain"
+            style={{ WebkitTouchCallout: 'default' }}
+            draggable={false}
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       ) : null}
 
