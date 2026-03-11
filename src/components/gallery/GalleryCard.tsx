@@ -172,7 +172,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         const cardWidth = Math.round(cardWidthCss * scale);
         const cardShadowBlur = 40 * scale;
         const cardShadowOffsetY = 20 * scale;
-        const outerPadding = Math.max(40 * scale, cardShadowBlur + cardShadowOffsetY + 8 * scale);
+        const outerPadding = Math.round((cardShadowBlur + cardShadowOffsetY) * 0.5 + 4 * scale);
         const cardRadius = 16 * scale;
         const cardPaddingX = 32 * scale;
         const coverPaddingTop = 16 * scale;
