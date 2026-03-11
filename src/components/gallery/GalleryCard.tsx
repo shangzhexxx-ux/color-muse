@@ -142,7 +142,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         const isWeChatLocal = /MicroMessenger/i.test(navigator.userAgent);
         const scale = targetScale ?? (isWeChatLocal || isMobile ? 2 : 3);
-        const bgColor = '#FBF9F6';
+        const bgColor = isWeChatLocal ? '#FFFFFF' : '#FBF9F6';
 
         let cardWidthCss = cardRef.current?.getBoundingClientRect().width ?? 0;
         if (cardWidthCss < 10) {
@@ -154,7 +154,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         const cardWidth = Math.round(cardWidthCss * scale);
         const cardShadowBlur = 40 * scale;
         const cardShadowOffsetY = 20 * scale;
-        const outerPadding = Math.max(40 * scale, cardShadowBlur + cardShadowOffsetY + 8 * scale);
+        const outerPadding = isWeChatLocal ? 0 : Math.max(40 * scale, cardShadowBlur + cardShadowOffsetY + 8 * scale);
         const cardRadius = 16 * scale;
         const cardPaddingX = 32 * scale;
         const coverPaddingTop = 16 * scale;
@@ -199,15 +199,20 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         ctx.fillStyle = bgColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        ctx.save();
-        ctx.shadowColor = 'rgba(0,0,0,0.08)';
-        ctx.shadowBlur = cardShadowBlur;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = cardShadowOffsetY;
-        ctx.fillStyle = '#FFFFFF';
-        drawRoundedRect(ctx, cardX, cardY, cardWidth, cardHeight, cardRadius);
-        ctx.fill();
-        ctx.restore();
+        if (!isWeChatLocal) {
+          ctx.save();
+          ctx.shadowColor = 'rgba(0,0,0,0.08)';
+          ctx.shadowBlur = cardShadowBlur;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = cardShadowOffsetY;
+          ctx.fillStyle = '#FFFFFF';
+          drawRoundedRect(ctx, cardX, cardY, cardWidth, cardHeight, cardRadius);
+          ctx.fill();
+          ctx.restore();
+        } else {
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(cardX, cardY, cardWidth, cardHeight);
+        }
 
         let cursorY = cardY + coverPaddingTop;
 
@@ -222,15 +227,17 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
         const imageX = cardX + cardPaddingX;
         const imageY = cursorY;
 
-        ctx.save();
-        ctx.shadowColor = 'rgba(0,0,0,0.12)';
-        ctx.shadowBlur = 9 * scale;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 4 * scale;
-        ctx.fillStyle = '#FFFFFF';
-        drawRoundedRect(ctx, imageX, imageY, imageWidth, imageHeight, imageRadius);
-        ctx.fill();
-        ctx.restore();
+        if (!isWeChatLocal) {
+          ctx.save();
+          ctx.shadowColor = 'rgba(0,0,0,0.12)';
+          ctx.shadowBlur = 9 * scale;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 4 * scale;
+          ctx.fillStyle = '#FFFFFF';
+          drawRoundedRect(ctx, imageX, imageY, imageWidth, imageHeight, imageRadius);
+          ctx.fill();
+          ctx.restore();
+        }
 
         ctx.save();
         drawRoundedRect(ctx, imageX, imageY, imageWidth, imageHeight, imageRadius);
