@@ -376,6 +376,12 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
           setWeChatToastVisible(true);
           return;
         }
+
+        if (!isWeChatMobile) {
+          await downloadDataUrl(dataUrl, `color-muse-${Date.now()}.png`);
+          return;
+        }
+
         setWeChatOverlayUrl(dataUrl);
         window.history.pushState({ cmWeChatPreview: true }, '', '#preview');
         return;
