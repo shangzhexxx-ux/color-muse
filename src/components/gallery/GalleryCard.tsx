@@ -168,7 +168,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
       try {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         const isWeChatLocal = /MicroMessenger/i.test(navigator.userAgent);
-        const defaultScale = isWeChatLocal || isMobile ? 3 : 4;
+        const defaultScale = isWeChatLocal || isMobile ? 2.5 : 3.5;
         const scale = targetScale ?? defaultScale;
         const bgColor = '#FBF9F6';
 
@@ -376,6 +376,22 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
   const handleDownload = async () => {
     try {
+      if (isAndroidChrome) {
+        const previewWindow = window.open('about:blank');
+        const dataUrl = generatedImageRef.current ?? (await ensureGeneratedImage());
+        if (!dataUrl) return;
+
+        const bytes = dataUrlToPngBytes(dataUrl);
+        const blobUrl = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
+        if (previewWindow) {
+          previewWindow.location.replace(blobUrl);
+        } else {
+          window.location.href = blobUrl;
+        }
+        window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+        return;
+      }
+
       if (isWeChat) {
         const dataUrl = generatedImageRef.current ?? (await ensureGeneratedImage());
         if (!dataUrl) {
@@ -396,23 +412,6 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
       const url = await ensureGeneratedImage();
       if (!url) return;
-
-      if (isAndroidChrome) {
-        const blob = await (await fetch(url)).blob();
-        const filename = `color-muse-${Date.now()}.png`;
-        const imageFile = new File([blob], filename, { type: 'image/png' });
-
-        if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
-          await navigator.share({ files: [imageFile] });
-          return;
-        }
-
-        const blobUrl = URL.createObjectURL(blob);
-        const opened = window.open(blobUrl, '_blank', 'noopener,noreferrer');
-        if (!opened) window.location.href = blobUrl;
-        window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-        return;
-      }
 
       await downloadDataUrl(url, `color-muse-${Date.now()}.png`);
     } catch (err) {
