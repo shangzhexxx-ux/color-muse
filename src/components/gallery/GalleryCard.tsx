@@ -41,6 +41,13 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
   const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
   const isWeChatMobile = isWeChat && ((window.matchMedia?.('(pointer: coarse)')?.matches ?? false) || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent));
+  const isAndroidChrome =
+    /Android/i.test(navigator.userAgent) &&
+    /Chrome/i.test(navigator.userAgent) &&
+    !/Edg/i.test(navigator.userAgent) &&
+    !/OPR/i.test(navigator.userAgent) &&
+    !/SamsungBrowser/i.test(navigator.userAgent) &&
+    !isWeChat;
 
   const dataUrlToPngBytes = (dataUrl: string) => {
     const commaIndex = dataUrl.indexOf(',');
@@ -389,6 +396,24 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
 
       const url = await ensureGeneratedImage();
       if (!url) return;
+
+      if (isAndroidChrome) {
+        const blob = await (await fetch(url)).blob();
+        const filename = `color-muse-${Date.now()}.png`;
+        const imageFile = new File([blob], filename, { type: 'image/png' });
+
+        if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+          await navigator.share({ files: [imageFile] });
+          return;
+        }
+
+        const blobUrl = URL.createObjectURL(blob);
+        const opened = window.open(blobUrl, '_blank', 'noopener,noreferrer');
+        if (!opened) window.location.href = blobUrl;
+        window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+        return;
+      }
+
       await downloadDataUrl(url, `color-muse-${Date.now()}.png`);
     } catch (err) {
       console.error('Download failed:', err);
