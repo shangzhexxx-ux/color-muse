@@ -78,7 +78,7 @@ const GalleryCard = ({ palette }: GalleryCardProps) => {
   useEffect(() => {
     if (!weChatOverlayUrl) return;
     setWeChatTipVisible(true);
-    const t = window.setTimeout(() => setWeChatTipVisible(false), 1800);
+    const t = window.setTimeout(() => setWeChatTipVisible(false), 3000);
     return () => window.clearTimeout(t);
   }, [weChatOverlayUrl]);
 
