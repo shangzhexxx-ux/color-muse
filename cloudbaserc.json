@@ -1,0 +1,20 @@
+{
+  "version": "2.0",
+  "$schema": "https://framework-1258016615.tcloudbaseapp.com/schema/latest.json",
+  "envId": "{{env.ENV_ID}}",
+  "framework": {
+    "name": "color-muse",
+    "plugins": {
+      "client": {
+        "use": "@cloudbase/framework-plugin-website",
+        "inputs": {
+          "installCommand": "npm install",
+          "buildCommand": "npm run build",
+          "outputPath": "dist",
+          "cloudPath": "/"
+        }
+      }
+    }
+  }
+}
+
